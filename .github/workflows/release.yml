@@ -45,8 +45,6 @@ jobs:
           terraform_wrapper: false
 
       - name: Test
-        env:
-          TEST_REGISTRY: ghcr.io/${{ github.repository_owner }}/
         run: make test
 
       - name: Install svu

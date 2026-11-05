@@ -14,6 +14,6 @@
 - Development
   - `make build`, which tests first, `make test`, `make docs`, `make target-schemas`, `make snapshot` and `make install`.
   - CI runs the tests on every push and pull request, the Grafana integration test included.
-  - CI pulls the integration test's Grafana images from the repository's copies in the GitHub Container Registry, mirrored from Docker Hub once per release.
+  - The integration test pulls its Grafana images from the repository's copies in the GitHub Container Registry, mirrored from Docker Hub once per release.
   - A dispatched snapshot workflow publishes a signed pre-release that a configuration installs by pinning its exact version.
   - A dispatched release workflow stamps the changelog, tags the version, and publishes the signed archives the Terraform Registry reads, with the DSL's and the target schemas' JSON Schemas.

@@ -19,6 +19,7 @@ import (
 
 	"github.com/litebitus/terraform-provider-dashboard/dashboarddsl"
 	"github.com/litebitus/terraform-provider-dashboard/grafanarenderer"
+	"github.com/litebitus/terraform-provider-dashboard/internal/grafanamirror"
 )
 
 // mockFolder is the folder the dashboards are provisioned under, which Grafana's file provider makes a Grafana folder.
@@ -111,11 +112,28 @@ func runAgainstGrafana(m *testing.M) (int, error) {
 	return m.Run(), nil
 }
 
+// mirrorPullBound is the longest the pull of the repository's copy of a Grafana image may take.
+const mirrorPullBound = 5 * time.Minute
+
+// grafanaImage is the repository's copy of the target schema's Grafana release, or Docker Hub's image when the copy cannot be pulled.
+func grafanaImage(target grafanarenderer.TargetSchema) string {
+	mirrored := grafanamirror.Image(target)
+	ctx, cancel := context.WithTimeout(context.Background(), mirrorPullBound)
+	defer cancel()
+	pulled, err := exec.CommandContext(ctx, "docker", "pull", "--quiet", mirrored).CombinedOutput()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to pull %s, so the test runs %s from Docker Hub: %s\n",
+			mirrored, target.GrafanaImage(), strings.TrimSpace(string(pulled)))
+		return target.GrafanaImage()
+	}
+	return mirrored
+}
+
 func (grafana *runningGrafana) start(folder string) error {
 	if err := grafana.provision(folder); err != nil {
 		return err
 	}
-	image := os.Getenv("TEST_REGISTRY") + grafana.target.GrafanaImage()
+	image := grafanaImage(grafana.target)
 	started, err := exec.Command("docker", "run", "--detach", "--rm",
 		"--publish", "127.0.0.1::3000",
 		"--volume", filepath.Join(folder, "provisioning")+":/etc/grafana/provisioning:ro",

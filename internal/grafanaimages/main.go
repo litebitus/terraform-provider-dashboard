@@ -1,4 +1,4 @@
-// Command grafanaimages prints the Docker Hub image of every carried target schema's Grafana release, one per line, for CI to mirror.
+// Command grafanaimages prints, one pair per line, the Docker Hub image of every carried target schema's Grafana release and the repository's copy of it, for CI to mirror.
 package main
 
 import (
@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/litebitus/terraform-provider-dashboard/grafanarenderer"
+	"github.com/litebitus/terraform-provider-dashboard/internal/grafanamirror"
 )
 
 func main() {
@@ -15,12 +16,12 @@ func main() {
 		fmt.Fprintln(os.Stderr, "grafanaimages:", err)
 		os.Exit(1)
 	}
-	var images []string
+	var pairs []string
 	for _, target := range carried {
-		images = append(images, target.GrafanaImage())
+		pairs = append(pairs, "docker.io/"+target.GrafanaImage()+" "+grafanamirror.Image(target))
 	}
-	slices.Sort(images)
-	for _, image := range slices.Compact(images) {
-		fmt.Println(image)
+	slices.Sort(pairs)
+	for _, pair := range slices.Compact(pairs) {
+		fmt.Println(pair)
 	}
 }

@@ -28,18 +28,18 @@ jobs:
 
       - name: Mirror each carried Grafana release
         env:
-          REGISTRY: ghcr.io/${{ github.repository_owner }}/
-          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           set -euo pipefail
-          for image in $(go run ./internal/grafanaimages); do
-            if docker buildx imagetools inspect "${REGISTRY}${image}" >/dev/null 2>&1; then
-              echo "${REGISTRY}${image} is mirrored already"
+          go run ./internal/grafanaimages > "$RUNNER_TEMP/grafana-images"
+          while read -r source mirror; do
+            if docker buildx imagetools inspect "$mirror" >/dev/null 2>&1; then
+              echo "$mirror is mirrored already"
               continue
             fi
             docker buildx imagetools create \
-              --annotation "index:org.opencontainers.image.source=${SOURCE}" \
-              --tag "${REGISTRY}${image}" \
-              "docker.io/${image}"
-            echo "mirrored docker.io/${image} to ${REGISTRY}${image}"
-          done
+              --annotation "index:org.opencontainers.image.source=${REPOSITORY_URL}" \
+              --tag "$mirror" \
+              "$source"
+            echo "mirrored $source to $mirror"
+          done < "$RUNNER_TEMP/grafana-images"
