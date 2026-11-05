@@ -86,7 +86,7 @@ Go, Terraform and Docker build and test the repo; GoReleaser builds the snapshot
 
 The Grafana integration test runs the Grafana release of each carried target schema and loads every panel kind into it through its file provider, as the monitoring UI loads dashboards. `TEST_REGISTRY` prefixes the Grafana image; empty, the test pulls from Docker Hub.
 
-CI pulls the Grafana images from the repository's copies in the GitHub Container Registry, `ghcr.io/litebitus/grafana/grafana`, so Docker Hub's rate limit cannot fail a build. The `Mirror images` workflow runs before every test run and copies each carried release not yet there; a new package is made public once, in its settings.
+CI pulls the Grafana images from the repository's copies in the GitHub Container Registry, `ghcr.io/litebitus/grafana/grafana`, so Docker Hub's rate limit cannot fail a build. The `Mirror images` workflow runs before every test run and copies each carried release not yet there.
 
 ### Releases
 
