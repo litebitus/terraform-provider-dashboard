@@ -1,0 +1,153 @@
+schema_version: "1"
+title: Mock Every Kind
+description: Every panel kind Grafana draws.
+tags: [mock]
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+filter: env:${env}
+links:
+  - title: Mock runbook
+    url: https://mock.example/runbook?env=${env}
+annotations:
+  - title: Mock deploys
+    query: __name__:mock_deploys_total
+variables:
+  env:
+    choices: field_values(env)
+    default: mock
+  job:
+    choices: field_values(job, "__name__:mock_requests_total")
+    multiple: true
+    include_all: true
+  region:
+    choices: list("mock-a", "mock,b")
+    default: mock-a
+  search:
+    choices: free_text()
+rows:
+  - title: Series
+    panels:
+      - title: Requests
+        kind: time_series
+        width: 50
+        height: 300
+        unit: per_second
+        decimals: 1
+        legend: {show: true, position: right}
+        axis: {scale: log, label: requests}
+        links:
+          - title: Mock job
+            url: https://mock.example/jobs/${job}
+        queries:
+          - query: __name__:mock_requests_total and job:${job} | rate(5m) | sum() by job
+            legend_format: "{{job}}"
+            min_interval: 30s
+      - title: Bytes
+        kind: area
+        height: 300
+        unit: bytes
+        stacked: true
+        queries:
+          - query: __name__:mock_bytes_total | rate(5m) | sum() by job
+  - title: Values
+    repeat_for: region
+    panels:
+      - title: Error ratio
+        kind: stat
+        height: 150
+        unit: percent
+        calculation: last
+        thresholds:
+          - {value: 1, color: yellow}
+          - {value: 5, color: red}
+        queries:
+          - query: __name__:mock_errors_total | rate(5m) | sum()
+      - title: Saturation
+        kind: gauge
+        height: 150
+        unit: percent
+        calculation: mean
+        min: 0
+        max: 100
+        queries:
+          - query: __name__:mock_saturation | avg()
+      - title: Requests by job
+        kind: bar
+        height: 150
+        unit: count
+        calculation: sum
+        orientation: horizontal
+        queries:
+          - query: __name__:mock_requests_total | sum() by job
+      - title: Share by job
+        kind: pie
+        height: 150
+        unit: count
+        calculation: sum
+        value_mappings:
+          "0": none
+        queries:
+          - query: __name__:mock_requests_total | sum() by job
+  - title: Distributions
+    collapsed: true
+    panels:
+      - title: Latency buckets
+        kind: heatmap
+        height: 300
+        unit: seconds
+        queries:
+          - query: __name__:mock_latency_seconds_bucket | rate(5m) | sum() by le
+            legend_format: "{{le}}"
+      - title: Latency
+        kind: histogram
+        height: 300
+        unit: seconds
+        queries:
+          - query: __name__:mock_latency_seconds
+  - title: States
+    panels:
+      - title: Up
+        kind: state_timeline
+        height: 200
+        unit: count
+        value_mappings:
+          "0": down
+          "1": up
+        queries:
+          - query: __name__:up and job:${job}
+      - title: Up history
+        kind: status_history
+        height: 200
+        unit: count
+        queries:
+          - query: __name__:up
+      - title: Players
+        kind: map
+        height: 200
+        unit: count
+        location_field: country
+        queries:
+          - query: __name__:mock_players | sum() by country
+  - title: Lists
+    panels:
+      - title: Targets
+        kind: table
+        width: 40
+        height: 200
+        unit: count
+        queries:
+          - query: __name__:up
+      - title: Series
+        kind: records
+        width: 40
+        height: 200
+        unit: count
+        queries:
+          - query: __name__:up
+      - title: Notes
+        kind: text
+        height: 200
+        content: "Mock **notes** for ${env}."

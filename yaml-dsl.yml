@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://github.com/litebitus/yaml-dsl-spec/releases/latest/download/yaml-dsl-v1.schema.json
+version: "1"
+dsls:
+  - id: dashboard
+    file_includes: ["**/dashboards/*.yml"]
+    file_excludes: []
+    schema_search_paths: ["{config_root}/schemas/dashboard-dsl-v1.0.schema.json"]
+    placeholder:
+      pattern: "\\$\\{(?<body>[^}\\n]*)\\}"
+      escape_prefix: "$"
+      unscanned_paths: []
+    key_sort_orders: []
+    scopes:
+      variable:
+        regions: ["$"]
+        later_items_of_declaring_list: false
+        named_by_parent_key: false
+        builtin_names: []
+    declarations:
+      - path: "$.variables.*"
+        skip_keys: []
+        exclude_candidates: []
+        name_source: key
+        key_token: all_words
+        name_spelling: as_written
+        meta_argument_name: null
+        declares_every_name: false
+        scope_name: variable
+    references:
+      - pattern: "^(?<name>[A-Za-z_][A-Za-z0-9_]*)$"
+        positions: [whole_placeholder, placeholder_in_text]
+        text_after_name_allowed: false
+        scope_name: variable
+        scope_group: null
+        name_group: name

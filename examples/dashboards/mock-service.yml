@@ -1,0 +1,25 @@
+schema_version: "1"
+target_schemas: [grafana-v2-13]
+title: Mock Service
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+variables:
+  env:
+    choices: field_values(env)
+    default: dev
+  job:
+    multiple: true
+    choices: field_values(job, "__name__:mock_requests_total and env:${env}")
+rows:
+  - title: Traffic
+    panels:
+      - title: Requests by job
+        kind: time_series
+        height: 300
+        unit: per_second
+        queries:
+          - query: __name__:mock_requests_total and env:${env} and job:${job} | rate(5m) | sum() by job
+            legend_format: "{{job}}"

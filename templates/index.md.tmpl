@@ -1,0 +1,24 @@
+---
+page_title: "{{ .ProviderShortName }} Provider"
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{ .ProviderShortName }} Provider
+
+Renders dashboard DSL documents into the dashboard JSON of a UI's target schema at plan time. It writes nothing: the caller puts the JSON where the UI loads it.
+
+Provider functions need Terraform 1.8 or later.
+
+| | Renders |
+|---|---|
+| [`render`](functions/render) function | with the call's and the document's target schemas |
+| [`dashboard_render`](data-sources/render) data source | the same, with the provider's `default_target_schemas` at the lowest priority |
+
+A document's shape is the [document schema](https://github.com/litebitus/terraform-provider-dashboard/releases/latest/download/dashboard-dsl-v1.schema.json); its queries are DQL, compiled by the [DQL compiler](https://github.com/litebitus/dql-compiler/blob/main/docs/design.md). The target schemas and how one is chosen are in the [DSL's specification](https://github.com/litebitus/terraform-provider-dashboard/blob/main/docs/dashboard-dsl.md).
+
+## Example Usage
+
+{{ tffile "examples/provider/provider.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}

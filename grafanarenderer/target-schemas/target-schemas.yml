@@ -1,0 +1,6 @@
+grafana-v2-13.3:
+  grafana_release: v13.3.0
+  api_version: dashboard.grafana.app/v2
+  plugin_version: 13.3.0
+  cue_file: apps/dashboard/kinds/v2/dashboard_spec.cue
+  cue_expression: DashboardSpec
