@@ -24,8 +24,6 @@ func newRenderDataSource() datasource.DataSource { return &renderDataSource{} }
 
 type renderDataSourceModel struct {
 	Spec         types.String `tfsdk:"spec"`
-	Owner        types.String `tfsdk:"owner"`
-	Name         types.String `tfsdk:"name"`
 	TargetSchema types.String `tfsdk:"target_schema"`
 	JSON         types.String `tfsdk:"json"`
 }
@@ -40,9 +38,7 @@ func (*renderDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 			"The target schema is `target_schema`, else the one the document's `target_schemas` leave, " +
 			"else the provider's `default_target_schemas`. The data source writes nothing: the caller puts `json` where the UI loads it.",
 		Attributes: map[string]schema.Attribute{
-			specInput:  schema.StringAttribute{Required: true, MarkdownDescription: "The dashboard document's text."},
-			ownerInput: schema.StringAttribute{Required: true, MarkdownDescription: "Who declares the dashboard."},
-			nameInput:  schema.StringAttribute{Required: true, MarkdownDescription: "The dashboard's name among its owner's."},
+			specInput: schema.StringAttribute{Required: true, MarkdownDescription: "The dashboard document's text."},
 			targetSchemaInput: schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "The target schema to render for: a whole identifier, such as `grafana-v2-13`, " +
@@ -66,8 +62,6 @@ func (source *renderDataSource) Read(ctx context.Context, request datasource.Rea
 	}
 	rendered, err := renderDocument(renderRequest{
 		spec:         model.Spec.ValueString(),
-		owner:        model.Owner.ValueString(),
-		name:         model.Name.ValueString(),
 		targetSchema: model.TargetSchema.ValueString(),
 		defaults:     source.defaults,
 	})

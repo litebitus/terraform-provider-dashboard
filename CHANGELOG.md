@@ -9,9 +9,11 @@
 - Dashboard DSL
   - `schemas/dashboard-dsl-v1.0.schema.json`: the document schema, published with every release beside `dashboard-dsl-v1.schema.json`, the newest 1.x.
   - `target_schemas`: the target schemas a document renders for.
+  - `id`: the dashboard's identity in the UI it renders for, assigned by the UI when left out.
   - `yaml-dsl.yml`: the DSL's definition for YAML DSL readers.
 - Development
   - `make build`, which tests first, `make test`, `make docs`, `make target-schemas`, `make snapshot` and `make install`.
   - CI runs the tests on every push and pull request, the Grafana integration test included.
+  - CI pulls the integration test's Grafana images from the repository's copies in the GitHub Container Registry, mirrored from Docker Hub once per release.
   - A dispatched snapshot workflow publishes a signed pre-release that a configuration installs by pinning its exact version.
   - A dispatched release workflow stamps the changelog, tags the version, and publishes the signed archives the Terraform Registry reads, with the DSL's and the target schemas' JSON Schemas.

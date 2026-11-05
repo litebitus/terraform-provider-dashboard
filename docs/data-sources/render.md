@@ -14,9 +14,7 @@ Renders a dashboard DSL document into the dashboard JSON of the target schema it
 
 ```terraform
 data "dashboard_render" "mock_service" {
-  spec  = file("${path.module}/../../dashboards/mock-service.yml")
-  owner = "mock-owner"
-  name  = "mock-service"
+  spec = file("${path.module}/../../dashboards/mock-service.yml")
 }
 
 resource "aws_s3_object" "mock_service_dashboard" {
@@ -32,8 +30,6 @@ resource "aws_s3_object" "mock_service_dashboard" {
 
 ### Required
 
-- `name` (String) The dashboard's name among its owner's.
-- `owner` (String) Who declares the dashboard.
 - `spec` (String) The dashboard document's text.
 
 ### Optional

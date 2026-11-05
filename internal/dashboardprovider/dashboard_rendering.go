@@ -1,7 +1,6 @@
 package dashboardprovider
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/litebitus/terraform-provider-dashboard/dashboarddsl"
@@ -12,8 +11,6 @@ import (
 // renderRequest is one render, as the function and the data source state it.
 type renderRequest struct {
 	spec         string
-	owner        string
-	name         string
 	targetSchema string
 	defaults     map[string]string
 }
@@ -29,35 +26,22 @@ func (problem renderProblem) Error() string { return problem.err.Error() }
 // The inputs a problem lies with.
 const (
 	specInput         = "spec"
-	ownerInput        = "owner"
-	nameInput         = "name"
 	targetSchemaInput = "target_schema"
 )
 
 // dashboardRenderer renders a document for the target schemas it carries.
 type dashboardRenderer struct {
 	carried func() ([]targetschema.ID, error)
-	render  func(dashboard dashboarddsl.Dashboard, owner, name string, target targetschema.ID) ([]byte, error)
+	render  func(dashboard dashboarddsl.Dashboard, target targetschema.ID) ([]byte, error)
 }
 
 // renderers are the renderers the provider carries.
 var renderers = []dashboardRenderer{
-	{
-		carried: grafanarenderer.CarriedIDs,
-		render: func(dashboard dashboarddsl.Dashboard, owner, name string, target targetschema.ID) ([]byte, error) {
-			return grafanarenderer.RenderDashboard(dashboard, grafanarenderer.DashboardIdentity{Owner: owner, Name: name}, target)
-		},
-	},
+	{carried: grafanarenderer.CarriedIDs, render: grafanarenderer.RenderDashboard},
 }
 
 // renderDocument renders a document for the one target schema the request leaves, resolved among those the provider carries.
 func renderDocument(request renderRequest) (string, error) {
-	if request.owner == "" {
-		return "", renderProblem{ownerInput, errors.New("owner is required")}
-	}
-	if request.name == "" {
-		return "", renderProblem{nameInput, errors.New("name is required")}
-	}
 	dashboard, err := dashboarddsl.ParseDashboard(request.spec)
 	if err != nil {
 		return "", renderProblem{specInput, err}
@@ -84,7 +68,7 @@ func renderDocument(request renderRequest) (string, error) {
 	if err != nil {
 		return "", renderProblem{targetSchemaInput, err}
 	}
-	rendered, err := byKind[resolved.Kind].render(dashboard, request.owner, request.name, resolved)
+	rendered, err := byKind[resolved.Kind].render(dashboard, resolved)
 	if err != nil {
 		return "", renderProblem{specInput, fmt.Errorf("target schema %s: %w", resolved, err)}
 	}

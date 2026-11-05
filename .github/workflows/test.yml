@@ -9,7 +9,14 @@ permissions:
   contents: read
 
 jobs:
+  mirror-images:
+    uses: ./.github/workflows/mirror-images.yml
+    permissions:
+      contents: read
+      packages: write
+
   test:
+    needs: mirror-images
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -28,4 +35,6 @@ jobs:
           terraform_wrapper: false
 
       - name: Test
+        env:
+          TEST_REGISTRY: ghcr.io/${{ github.repository_owner }}/
         run: make test

@@ -1,6 +1,7 @@
 package grafanarenderer
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"os"
@@ -14,8 +15,6 @@ import (
 )
 
 var updateGoldens = flag.Bool("update", false, "write each render to its golden file")
-
-var mockIdentity = DashboardIdentity{Owner: "mock-owner", Name: "mock-name"}
 
 // newestCarried is the last target schema the manifest carries, which every golden render is made for.
 func newestCarried(t *testing.T) targetschema.ID {
@@ -84,7 +83,7 @@ func TestARenderForATargetNotCarriedIsRefused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = RenderDashboard(dashboard, mockIdentity, targetschema.ID{Kind: "grafana-v2", Version: "1.0"})
+	_, err = RenderDashboard(dashboard, targetschema.ID{Kind: "grafana-v2", Version: "1.0"})
 	if err == nil || !strings.Contains(err.Error(), "not one this renderer carries") {
 		t.Errorf("err = %v", err)
 	}
@@ -96,7 +95,7 @@ func rendered(t *testing.T, spec string) ([]byte, error) {
 	if err != nil {
 		t.Fatalf("the spec does not parse: %v", err)
 	}
-	return RenderDashboard(dashboard, mockIdentity, newestCarried(t))
+	return RenderDashboard(dashboard, newestCarried(t))
 }
 
 // Each spec in testdata renders to its golden JSON.
@@ -130,11 +129,37 @@ func TestASpecRendersToItsGoldenJSON(t *testing.T) {
 	}
 }
 
-func TestTheSameOwnerAndNameAnswerTheSameUID(t *testing.T) {
-	first, second := dashboardName(mockIdentity), dashboardName(mockIdentity)
-	other := dashboardName(DashboardIdentity{Owner: "mock-owner", Name: "mock-other"})
-	if first != second || first == other || len(first) != 20 {
-		t.Errorf("uids %q, %q and %q", first, second, other)
+// A render is the same on every run, with or without an id, so a plan shows no change until the document does.
+func TestARenderIsTheSameEveryTime(t *testing.T) {
+	first, err := rendered(t, mockSpec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 5 {
+		again, err := rendered(t, mockSpec)
+		if err != nil || string(again) != string(first) {
+			t.Fatalf("a second render differs (%v):\n%s\nfrom\n%s", err, again, first)
+		}
+	}
+}
+
+// A document's id is the dashboard's name in Grafana; without one, the render names none and Grafana assigns it.
+func TestADocumentsIDIsTheDashboardsName(t *testing.T) {
+	for id, want := range map[string]string{"mock-dashboard": "mock-dashboard", "": ""} {
+		spec := mockSpec
+		if id != "" {
+			spec = strings.Replace(mockSpec, "title: Mock\n", "id: "+id+"\ntitle: Mock\n", 1)
+		}
+		rendered, err := rendered(t, spec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var resource struct {
+			Metadata map[string]string `json:"metadata"`
+		}
+		if err := json.Unmarshal(rendered, &resource); err != nil || resource.Metadata["name"] != want {
+			t.Errorf("id %q: metadata %v (%v), want name %q", id, resource.Metadata, err, want)
+		}
 	}
 }
 
@@ -172,6 +197,10 @@ func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 		"range variable": {
 			"field_values(job)", "range(mock_ms)",
 			`dashboard "Mock", variable mock: Grafana has no range variable`,
+		},
+		"id Grafana does not take": {
+			"title: Mock\n", "id: Mock_Dashboard\ntitle: Mock\n",
+			`dashboard "Mock": id "Mock_Dashboard" is not a name Grafana takes`,
 		},
 		"tag cloud": {
 			"kind: time_series", "kind: tag_cloud",

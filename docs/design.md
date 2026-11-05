@@ -6,12 +6,13 @@ A Terraform provider that renders dashboard DSL documents at plan time. A docume
 
 | | Signature | Answers |
 |---|---|---|
-| function `provider::dashboard::render` | `(spec string, owner string, name string, target_schema string...)` | the dashboard JSON, a string |
-| data source `dashboard_render` | `spec`, `owner`, `name`, `target_schema` optional | `json`, the dashboard JSON |
+| function `provider::dashboard::render` | `(spec string, options map(string)...)`, at most one map of options, `target_schema` its one key | the dashboard JSON, a string |
+| data source `dashboard_render` | `spec`, `target_schema` optional | `json`, the dashboard JSON |
 
-- `spec` is the document's text. `owner` is who declares the dashboard and `name` its name among the owner's; together they make its name in the UI.
+- `spec` is the document's text, which states everything about the dashboard, its identity included, in its `id`.
 - Both render through one path and differ in one thing: the data source also reads the provider's `default_target_schemas`, which Terraform never shows a function.
-- A problem fails the plan on the input it lies with: the document's at its place, `row 1, panel 2, query 1: …`, and a target schema that cannot be chosen on `target_schema`.
+- A render is a function of the document and its target schema alone, the same on every run: an identity the UI assigns never enters it, so a plan shows no change until the document does.
+- A problem fails the plan on the input it lies with: the document's at its place, `row 1, panel 2, query 1: …`, and a target schema that cannot be chosen on `target_schema`, or the options for the function.
 
 ### Choosing the target schema
 
@@ -68,7 +69,7 @@ A renderer carries its target schemas as entries of a manifest beside their JSON
 
 ## Grafana
 
-A render is a V2 Resource dashboard of the target schema's `api_version`. Its name is the first 20 hex digits of the SHA-256 of `<owner>/<name>`, so a render replaces what the last one rendered.
+A render is a V2 Resource dashboard of the target schema's `api_version`. Its `metadata.name` is the document's `id`; without one the render names none, and Grafana assigns a name and keeps it with the dashboard's file.
 
 ### Queries
 

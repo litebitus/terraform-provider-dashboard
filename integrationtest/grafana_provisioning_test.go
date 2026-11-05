@@ -21,7 +21,11 @@ import (
 	"github.com/litebitus/terraform-provider-dashboard/grafanarenderer"
 )
 
-var mockIdentity = grafanarenderer.DashboardIdentity{Owner: "mock-owner", Name: "every-kind"}
+// mockFolder is the folder the dashboards are provisioned under, which Grafana's file provider makes a Grafana folder.
+const mockFolder = "mock-owner"
+
+// unnamedTitle is the title of the every-kind render provisioned without an id, which Grafana names itself.
+const unnamedTitle = "Mock Every Kind Unnamed"
 
 // runningGrafana is one Grafana release, running with a render of the every-kind spec provisioned into it.
 type runningGrafana struct {
@@ -111,7 +115,7 @@ func (grafana *runningGrafana) start(folder string) error {
 	if err := grafana.provision(folder); err != nil {
 		return err
 	}
-	image := "grafana/grafana:" + strings.TrimPrefix(grafana.target.GrafanaRelease, "v")
+	image := os.Getenv("TEST_REGISTRY") + grafana.target.GrafanaImage()
 	started, err := exec.Command("docker", "run", "--detach", "--rm",
 		"--publish", "127.0.0.1::3000",
 		"--volume", filepath.Join(folder, "provisioning")+":/etc/grafana/provisioning:ro",
@@ -142,17 +146,24 @@ func (grafana *runningGrafana) provision(folder string) error {
 	if err != nil {
 		return err
 	}
-	rendered, err := grafanarenderer.RenderDashboard(dashboard, mockIdentity, grafana.target.ID)
+	rendered, err := grafanarenderer.RenderDashboard(dashboard, grafana.target.ID)
 	if err != nil {
 		return err
 	}
 	if err := json.Unmarshal(rendered, &grafana.rendered); err != nil {
 		return err
 	}
+	unnamed := dashboard
+	unnamed.ID, unnamed.Title = "", unnamedTitle
+	renderedUnnamed, err := grafanarenderer.RenderDashboard(unnamed, grafana.target.ID)
+	if err != nil {
+		return err
+	}
 	files := map[string][]byte{
 		filepath.Join("provisioning", "dashboards", "dashboard-dsl.yml"):   []byte(dashboardProvider),
 		filepath.Join("provisioning", "datasources", "datasources.yml"):    []byte(datasourceProvider),
-		filepath.Join("dashboards", mockIdentity.Owner, "every-kind.json"): rendered,
+		filepath.Join("dashboards", mockFolder, "every-kind.json"):         rendered,
+		filepath.Join("dashboards", mockFolder, "every-kind-unnamed.json"): renderedUnnamed,
 	}
 	for name, content := range files {
 		path := filepath.Join(folder, name)
@@ -214,7 +225,7 @@ func (grafana *runningGrafana) read(t *testing.T, path string, into any) {
 	}
 }
 
-// The dashboard loads from its file into its owner's folder, holding every panel as rendered.
+// The dashboard loads from its file into its folder, under the document's id, holding every panel as rendered.
 func TestGrafanaLoadsEveryPanelKindAsRendered(t *testing.T) {
 	for _, grafana := range grafanas {
 		var stored dashboardResource
@@ -223,11 +234,25 @@ func TestGrafanaLoadsEveryPanelKindAsRendered(t *testing.T) {
 			Title string `json:"title"`
 		}
 		grafana.read(t, "/api/folders/"+stored.Metadata.Annotations["grafana.app/folder"], &folder)
-		if folder.Title != mockIdentity.Owner {
-			t.Errorf("%s: folder %q, want %q", grafana.target.ID, folder.Title, mockIdentity.Owner)
+		if folder.Title != mockFolder {
+			t.Errorf("%s: folder %q, want %q", grafana.target.ID, folder.Title, mockFolder)
 		}
 		if got, want := panelGroups(stored), panelGroups(grafana.rendered); !slices.Equal(got, want) {
 			t.Errorf("%s: panels %v, want %v", grafana.target.ID, got, want)
+		}
+	}
+}
+
+// A render without an id loads too, under a name Grafana assigns.
+func TestGrafanaNamesADashboardWithoutAnID(t *testing.T) {
+	for _, grafana := range grafanas {
+		var found []struct {
+			UID   string `json:"uid"`
+			Title string `json:"title"`
+		}
+		grafana.read(t, "/api/search?type=dash-db&query="+strings.ReplaceAll(unnamedTitle, " ", "%20"), &found)
+		if len(found) != 1 || found[0].UID == "" {
+			t.Errorf("%s: dashboards titled %q: %+v, want one, named by Grafana", grafana.target.ID, unnamedTitle, found)
 		}
 	}
 }

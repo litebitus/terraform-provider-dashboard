@@ -48,6 +48,7 @@ A document is a dashboard: a dashboard holds rows, a row holds panels, and a pan
 |---|---|
 | `schema_version` | the version of the DSL the document is written in, required |
 | `target_schemas` | the target schemas the dashboard renders for, at most one per kind; optional |
+| `id` | the dashboard's identity in the UI it renders for, unique there; optional, the UI assigning one where it can; a shared template sets it from its parameters |
 | `title` | the dashboard's title, required |
 | `description` | what the dashboard is for; optional |
 | `tags` | the dashboard's tags; optional |
@@ -199,13 +200,14 @@ A `query` is DQL with pipe stages, the language of the [DQL compiler](https://gi
 
 ### Grafana
 
-Grafana's target schemas are of kind `grafana-v2`, Grafana's V2 Resource dashboard. A `metrics` source reads the UI's default data source; Grafana renders no `logs` source.
+Grafana's target schemas are of kind `grafana-v2`, Grafana's V2 Resource dashboard. A document's `id` is the dashboard's name in Grafana; without one, Grafana assigns a name and keeps it with the dashboard's file. A `metrics` source reads the UI's default data source; Grafana renders no `logs` source.
 
 | Refused | Why |
 |---|---|
 | a `logs` source | Grafana reads no OpenSearch data source |
 | `range()` | Grafana has no range variable |
 | `tag_cloud` | Grafana has no such panel |
+| an `id` other than lowercase letters, digits and hyphens, beginning and ending with a letter or digit, at most 40 | Grafana takes no other name |
 | a panel field the kind's Grafana panel does not draw, such as `stacked` on a `stat` | the panel would draw less than the document says |
 | a variable's choices query with stages or arithmetic | Grafana reads a variable's values from a series selector |
 

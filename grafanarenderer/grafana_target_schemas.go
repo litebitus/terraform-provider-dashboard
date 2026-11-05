@@ -38,6 +38,11 @@ type TargetSchema struct {
 // SchemaFileName is the name of the target schema's JSON Schema, beside the manifest and among a release's assets.
 func (target TargetSchema) SchemaFileName() string { return target.ID.String() + ".schema.json" }
 
+// GrafanaImage is the Docker Hub image of the target schema's Grafana release.
+func (target TargetSchema) GrafanaImage() string {
+	return "grafana/grafana:" + strings.TrimPrefix(target.GrafanaRelease, "v")
+}
+
 // TargetSchemas are the target schemas the renderer carries, as its manifest states them.
 func TargetSchemas() ([]TargetSchema, error) {
 	manifest, err := targetSchemaFiles.ReadFile(path.Join(targetSchemaFolder, "target-schemas.yml"))

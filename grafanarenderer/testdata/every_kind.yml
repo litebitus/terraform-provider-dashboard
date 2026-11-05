@@ -1,4 +1,5 @@
 schema_version: "1"
+id: mock-every-kind
 title: Mock Every Kind
 description: Every panel kind Grafana draws.
 tags: [mock]

@@ -43,9 +43,7 @@ provider "dashboard" {
 }
 
 data "dashboard_render" "mock_service" {
-  spec  = file("dashboards/mock-service.yml")
-  owner = "mock-owner"
-  name  = "mock-service"
+  spec = file("dashboards/mock-service.yml")
 }
 
 resource "aws_s3_object" "mock_service_dashboard" {
@@ -86,7 +84,9 @@ Go, Terraform and Docker build and test the repo; GoReleaser builds the snapshot
 | `make install` | builds the provider and prints the `dev_overrides` block that points local plans at it |
 | `make snapshot` | runs the tests, then builds every platform's archive, unsigned, into `dist/` |
 
-The Grafana integration test runs the Grafana release of each carried target schema and loads every panel kind into it through its file provider, as the monitoring UI loads dashboards.
+The Grafana integration test runs the Grafana release of each carried target schema and loads every panel kind into it through its file provider, as the monitoring UI loads dashboards. `TEST_REGISTRY` prefixes the Grafana image; empty, the test pulls from Docker Hub.
+
+CI pulls the Grafana images from the repository's copies in the GitHub Container Registry, `ghcr.io/litebitus/grafana/grafana`, so Docker Hub's rate limit cannot fail a build. The `Mirror images` workflow runs before every test run and copies each carried release not yet there; a new package is made public once, in its settings.
 
 ### Releases
 

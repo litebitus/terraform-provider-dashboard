@@ -17,6 +17,11 @@
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*-[0-9]+(\\.[0-9]+)?$" }
     },
+    "id": {
+      "description": "The dashboard's identity in the UI it renders for, unique there; left out, the UI assigns one where it can.",
+      "type": "string",
+      "minLength": 1
+    },
     "title": {
       "description": "The dashboard's title.",
       "type": "string",
@@ -77,7 +82,7 @@
   },
   "$defs": {
     "duration": {
-      "description": "A duration, such as 30s, 5m or 6h.",
+      "description": "A duration, such as `30s`, `5m` or `6h`.",
       "type": "string",
       "pattern": "^([0-9]+(ms|s|m|h|d|w|y))+$"
     },
@@ -137,8 +142,8 @@
           "minLength": 1
         },
         "default": { "description": "The value the dashboard opens with.", "type": "string" },
-        "multiple": { "description": "Whether several values can be chosen at once; false by default.", "type": "boolean" },
-        "include_all": { "description": "Whether an \"all\" choice matches every value; false by default.", "type": "boolean" }
+        "multiple": { "description": "Whether several values can be chosen at once; `false` by default.", "type": "boolean" },
+        "include_all": { "description": "Whether an \"all\" choice matches every value; `false` by default.", "type": "boolean" }
       }
     },
     "row": {
@@ -147,7 +152,7 @@
       "required": ["title", "panels"],
       "properties": {
         "title": { "description": "The row's title.", "type": "string", "minLength": 1 },
-        "collapsed": { "description": "Whether the row opens collapsed; false by default.", "type": "boolean" },
+        "collapsed": { "description": "Whether the row opens collapsed; `false` by default.", "type": "boolean" },
         "repeat_for": { "description": "A variable; the row repeats once per chosen value.", "type": "string", "minLength": 1 },
         "panels": {
           "description": "The row's panels, left to right.",
@@ -202,7 +207,7 @@
         },
         "legend": { "description": "Whether the panel shows its legend, and where.", "$ref": "#/$defs/legend" },
         "axis": { "description": "The scale values are drawn on, and its label.", "$ref": "#/$defs/axis" },
-        "stacked": { "description": "Whether series stack; false by default.", "type": "boolean" },
+        "stacked": { "description": "Whether series stack; `false` by default.", "type": "boolean" },
         "orientation": { "description": "For a bar panel, which way the bars run.", "enum": ["horizontal", "vertical"] },
         "location_field": {
           "description": "For a map panel, the field holding each item's location.",
@@ -287,7 +292,7 @@
           "description": "Where the query reads from, when it is not the dashboard's source.",
           "$ref": "#/$defs/source"
         },
-        "legend_format": { "description": "How a series is named, by its labels, such as {{job}}.", "type": "string" },
+        "legend_format": { "description": "How a series is named, by its labels, such as `{{job}}`.", "type": "string" },
         "min_interval": { "description": "The shortest step a time series is drawn at.", "$ref": "#/$defs/duration" }
       }
     }

@@ -5,6 +5,7 @@ package dashboarddsl
 type Dashboard struct {
 	SchemaVersion   string              `yaml:"schema_version"`
 	TargetSchemas   []string            `yaml:"target_schemas"`
+	ID              string              `yaml:"id"`
 	Title           string              `yaml:"title"`
 	Description     string              `yaml:"description"`
 	Tags            []string            `yaml:"tags"`

@@ -2,31 +2,25 @@
 package grafanarenderer
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 
 	"github.com/litebitus/terraform-provider-dashboard/dashboarddsl"
 	"github.com/litebitus/terraform-provider-dashboard/targetschema"
 )
 
-// DashboardIdentity is who declared a dashboard and under what name, which its Grafana name derives from.
-type DashboardIdentity struct {
-	Owner string
-	Name  string
-}
-
 // RenderDashboard answers a parsed document as a Grafana dashboard resource of the target schema given, a carried minor, or every refusal it meets.
-func RenderDashboard(dashboard dashboarddsl.Dashboard, identity DashboardIdentity, target targetschema.ID) ([]byte, error) {
+func RenderDashboard(dashboard dashboarddsl.Dashboard, target targetschema.ID) ([]byte, error) {
 	carried, err := targetSchemaFor(target)
 	if err != nil {
 		return nil, err
 	}
 	render := &dashboardRender{dashboard: dashboard, target: carried}
-	resource := render.resource(identity)
+	resource := render.resource()
 	if len(render.refusals) > 0 {
 		return nil, errors.Join(render.refusals...)
 	}
@@ -55,9 +49,13 @@ type dashboardResource struct {
 	Spec       dashboardSpec    `json:"spec"`
 }
 
+// resourceMetadata is the resource's metadata: its name, the document's id, or none for Grafana to assign one.
 type resourceMetadata struct {
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 }
+
+// dashboardNamePattern is what Grafana takes as a dashboard's name: lowercase letters, digits and hyphens, beginning and ending with a letter or digit, at most 40.
+var dashboardNamePattern = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,38}[a-z0-9])?$`)
 
 type dashboardSpec struct {
 	Annotations  []annotationQuery  `json:"annotations"`
@@ -131,10 +129,14 @@ func prometheusQuery(spec map[string]any) dataQuery {
 // autoRefreshIntervals are the refresh picker's choices, the dashboard's own refresh interval among them.
 var autoRefreshIntervals = []string{"5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"}
 
-func (render *dashboardRender) resource(identity DashboardIdentity) dashboardResource {
+func (render *dashboardRender) resource() dashboardResource {
 	dashboard := render.dashboard
 	if dashboard.Source.Kind != dashboarddsl.MetricsSource {
 		render.refuse("", "Grafana reads no OpenSearch data source; a logs dashboard renders for OpenSearch Dashboards")
+	}
+	if dashboard.ID != "" && !dashboardNamePattern.MatchString(dashboard.ID) {
+		render.refuse("", fmt.Sprintf("id %q is not a name Grafana takes: lowercase letters, digits and hyphens, "+
+			"beginning and ending with a letter or digit, at most 40", dashboard.ID))
 	}
 	render.queries = render.queryCompiler()
 	intervals := slices.Clone(autoRefreshIntervals)
@@ -173,7 +175,7 @@ func (render *dashboardRender) resource(identity DashboardIdentity) dashboardRes
 	return dashboardResource{
 		APIVersion: render.target.APIVersion,
 		Kind:       "Dashboard",
-		Metadata:   resourceMetadata{Name: dashboardName(identity)},
+		Metadata:   resourceMetadata{Name: dashboard.ID},
 		Spec:       spec,
 	}
 }
@@ -193,12 +195,6 @@ func (render *dashboardRender) annotation(position int, annotation dashboarddsl.
 		IconColor: "blue",
 		Name:      annotation.Title,
 	}}
-}
-
-// dashboardName is the dashboard's name in Grafana: the same owner and name answer the same name on every render.
-func dashboardName(identity DashboardIdentity) string {
-	sum := sha256.Sum256([]byte(identity.Owner + "/" + identity.Name))
-	return hex.EncodeToString(sum[:])[:20]
 }
 
 func nonNil[T any](values []T) []T {

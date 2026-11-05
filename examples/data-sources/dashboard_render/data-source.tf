@@ -1,7 +1,5 @@
 data "dashboard_render" "mock_service" {
-  spec  = file("${path.module}/../../dashboards/mock-service.yml")
-  owner = "mock-owner"
-  name  = "mock-service"
+  spec = file("${path.module}/../../dashboards/mock-service.yml")
 }
 
 resource "aws_s3_object" "mock_service_dashboard" {

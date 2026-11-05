@@ -2,7 +2,7 @@
   "apiVersion": "dashboard.grafana.app/v2",
   "kind": "Dashboard",
   "metadata": {
-    "name": "91fbd2d4a954446840ff"
+    "name": "mock-every-kind"
   },
   "spec": {
     "annotations": [

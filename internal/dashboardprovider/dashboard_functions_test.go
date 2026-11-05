@@ -41,20 +41,21 @@ func withTargetSchemas(declared string) string {
 	return strings.Replace(mockSpec, "title: Mock\n", "target_schemas: ["+declared+"]\ntitle: Mock\n", 1)
 }
 
-func run(t *testing.T, arguments []string, targetSchemas ...string) (string, *function.FuncError) {
+// run calls the function with the spec and the option maps given, as Terraform passes them.
+func run(t *testing.T, spec string, options ...map[string]string) (string, *function.FuncError) {
 	t.Helper()
-	values := make([]attr.Value, 0, len(arguments)+1)
-	for _, argument := range arguments {
-		values = append(values, types.StringValue(argument))
+	elementTypes := make([]attr.Type, len(options))
+	elements := make([]attr.Value, len(options))
+	for index, option := range options {
+		values := map[string]attr.Value{}
+		for key, value := range option {
+			values[key] = types.StringValue(value)
+		}
+		elementTypes[index], elements[index] = types.MapType{ElemType: types.StringType}, types.MapValueMust(types.StringType, values)
 	}
-	elementTypes := make([]attr.Type, len(targetSchemas))
-	elements := make([]attr.Value, len(targetSchemas))
-	for index, targetSchema := range targetSchemas {
-		elementTypes[index], elements[index] = types.StringType, types.StringValue(targetSchema)
-	}
-	values = append(values, types.TupleValueMust(elementTypes, elements))
+	arguments := []attr.Value{types.StringValue(spec), types.TupleValueMust(elementTypes, elements)}
 	response := &function.RunResponse{Result: function.NewResultData(types.StringUnknown())}
-	renderFunction{}.Run(context.Background(), function.RunRequest{Arguments: function.NewArgumentsData(values)}, response)
+	renderFunction{}.Run(context.Background(), function.RunRequest{Arguments: function.NewArgumentsData(arguments)}, response)
 	if response.Error != nil {
 		return "", response.Error
 	}
@@ -62,7 +63,7 @@ func run(t *testing.T, arguments []string, targetSchemas ...string) (string, *fu
 }
 
 func TestRenderAnswersTheDashboardOfTheTargetSchemaTheDocumentDeclares(t *testing.T) {
-	got, err := run(t, []string{withTargetSchemas("grafana-v2-13"), "mock-owner", "mock-name"})
+	got, err := run(t, withTargetSchemas("grafana-v2-13"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,49 +78,46 @@ func TestRenderAnswersTheDashboardOfTheTargetSchemaTheDocumentDeclares(t *testin
 	}
 }
 
-func TestAProblemBlamesTheArgumentItLiesWith(t *testing.T) {
-	for name, testCase := range map[string]struct {
-		arguments     []string
-		targetSchemas []string
-		argument      int64
-		says          string
-	}{
-		"no owner": {[]string{withTargetSchemas("grafana-v2-13"), "", "mock-name"}, nil, 1, "owner is required"},
-		"no name":  {[]string{withTargetSchemas("grafana-v2-13"), "mock-owner", ""}, nil, 2, "name is required"},
-		"invalid spec": {
-			[]string{strings.Replace(mockSpec, "timezone: utc\n", "", 1), "mock-owner", "mock-name"}, nil, 0,
-			"missing property 'timezone'",
-		},
-		"refused by Grafana": {
-			[]string{withTargetSchemas("grafana-v2-13"), "mock-owner", "mock-name"}, nil, 0, "",
-		},
-		"no target schema anywhere": {
-			[]string{mockSpec, "mock-owner", "mock-name"}, nil, 3,
-			"the document declares no target_schemas; name a whole identifier with target_schema",
-		},
-		"a target schema not carried": {
-			[]string{mockSpec, "mock-owner", "mock-name"}, []string{"grafana-v2-1"}, 3,
-			"target schema grafana-v2-1 is not one this provider renders; it renders grafana-v2-13.3",
-		},
-		"two target schemas named": {
-			[]string{mockSpec, "mock-owner", "mock-name"}, []string{"grafana-v2-13", "grafana-v2-13.3"}, 4,
-			"a render is for one target schema, not 2",
-		},
-	} {
-		if name == "refused by Grafana" {
-			testCase.arguments[0] = strings.Replace(testCase.arguments[0], "kind: time_series", "kind: tag_cloud", 1)
-			testCase.says = "Grafana has no tag_cloud panel"
-		}
-		_, err := run(t, testCase.arguments, testCase.targetSchemas...)
-		if err == nil || !strings.Contains(err.Text, testCase.says) || err.FunctionArgument == nil || *err.FunctionArgument != testCase.argument {
-			t.Errorf("%s: err = %+v, want %q on argument %d", name, err, testCase.says, testCase.argument)
-		}
+func TestTheOptionsNameTheTargetSchema(t *testing.T) {
+	if _, err := run(t, mockSpec, map[string]string{"target_schema": "grafana-v2-13.3"}); err != nil {
+		t.Error(err)
 	}
 }
 
-func TestAWholeIdentifierRendersADocumentThatDeclaresNone(t *testing.T) {
-	if _, err := run(t, []string{mockSpec, "mock-owner", "mock-name"}, "grafana-v2-13.3"); err != nil {
-		t.Error(err)
+func TestAProblemBlamesTheArgumentItLiesWith(t *testing.T) {
+	for name, testCase := range map[string]struct {
+		spec     string
+		options  []map[string]string
+		argument int64
+		says     string
+	}{
+		"invalid spec": {
+			strings.Replace(mockSpec, "timezone: utc\n", "", 1), nil, specArgument, "missing property 'timezone'",
+		},
+		"refused by Grafana": {
+			strings.Replace(withTargetSchemas("grafana-v2-13"), "kind: time_series", "kind: tag_cloud", 1), nil,
+			specArgument, "Grafana has no tag_cloud panel",
+		},
+		"no target schema anywhere": {
+			mockSpec, nil, optionsArgument,
+			"the document declares no target_schemas; name a whole identifier with target_schema",
+		},
+		"a target schema not carried": {
+			mockSpec, []map[string]string{{"target_schema": "grafana-v2-1"}}, optionsArgument,
+			"target schema grafana-v2-1 is not one this provider renders; it renders grafana-v2-13.3",
+		},
+		"an unknown option": {
+			mockSpec, []map[string]string{{"target_schemas": "grafana-v2-13"}}, optionsArgument,
+			`"target_schemas" is not an option; the options are target_schema`,
+		},
+		"two option maps": {
+			mockSpec, []map[string]string{{}, {}}, optionsArgument + 1, "the options are one map, not 2",
+		},
+	} {
+		_, err := run(t, testCase.spec, testCase.options...)
+		if err == nil || !strings.Contains(err.Text, testCase.says) || err.FunctionArgument == nil || *err.FunctionArgument != testCase.argument {
+			t.Errorf("%s: err = %+v, want %q on argument %d", name, err, testCase.says, testCase.argument)
+		}
 	}
 }
 
@@ -137,7 +135,7 @@ func TestTheFunctionAnswersInAPlan(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: `
 output "title" {
-  value = jsondecode(provider::dashboard::render(` + specHeredoc(withTargetSchemas("grafana-v2-13")) + `  , "mock-owner", "mock-name")).spec.title
+  value = jsondecode(provider::dashboard::render(` + specHeredoc(mockSpec) + `  , { target_schema = "grafana-v2-13" })).spec.title
 }
 `,
 			ConfigStateChecks: []statecheck.StateCheck{
@@ -162,8 +160,6 @@ func TestTheDataSourceAppliesTheProviderDefaults(t *testing.T) {
 			Config: mockDefaultsProvider + `
 data "dashboard_render" "mock" {
   spec          = ` + specHeredoc(mockSpec) + `
-  owner         = "mock-owner"
-  name          = "mock-name"
   target_schema = "grafana"
 }
 
@@ -186,7 +182,7 @@ func TestTheFunctionDoesNotSeeTheProviderDefaults(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: mockDefaultsProvider + `
 output "rendered" {
-  value = provider::dashboard::render(` + specHeredoc(mockSpec) + `  , "mock-owner", "mock-name", "grafana")
+  value = provider::dashboard::render(` + specHeredoc(mockSpec) + `  , { target_schema = "grafana" })
 }
 `,
 			ExpectError: regexp.MustCompile(`target_schema grafana is not a whole identifier`),
@@ -205,9 +201,7 @@ provider "dashboard" {
 }
 
 data "dashboard_render" "mock" {
-  spec  = ` + specHeredoc(withTargetSchemas("grafana-v2-13")) + `
-  owner = "mock-owner"
-  name  = "mock-name"
+  spec = ` + specHeredoc(withTargetSchemas("grafana-v2-13")) + `
 }
 `,
 			ExpectError: regexp.MustCompile(`default_target_schemas\[perses\] picks grafana-v2-13, which perses does not\s+match`),
