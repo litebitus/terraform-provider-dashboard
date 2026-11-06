@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.0 — 2026-11-06
+
 - Rendering
   - `render` function and `dashboard_render` data source: render a dashboard DSL document into the dashboard JSON of its target schema.
   - Grafana target schema `grafana-v2-13.3`, Grafana 13.3's V2 Resource dashboard; every render is checked against its JSON Schema.
