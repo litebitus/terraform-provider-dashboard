@@ -83,10 +83,10 @@ type Panel struct {
 	Queries       []Query                 `yaml:"queries"`
 }
 
-// Threshold is the color a value takes from Value up.
+// Threshold is the color a value takes from Value up, or from the lowest where Value is left out.
 type Threshold struct {
-	Value float64 `yaml:"value"`
-	Color string  `yaml:"color"`
+	Value *float64 `yaml:"value"`
+	Color string   `yaml:"color"`
 }
 
 // ValueMapping is what a value is shown as: its text, and the color it is shown in where one is stated.

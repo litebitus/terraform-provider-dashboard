@@ -4,6 +4,8 @@
 
 - Dashboard DSL
   - `schemas/dashboard-dsl-v1.1.schema.json`: a value mapping is its `text` and an optional `color`, which puts the value in a legend.
+  - The first threshold may leave out `value`, its color then holding from the lowest.
+  - A panel colors its values from one source: a panel with `thresholds` holds no value mapping with a `color`.
 
 ### Deprecated
 

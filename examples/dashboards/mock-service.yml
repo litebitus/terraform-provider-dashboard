@@ -56,3 +56,16 @@ rows:
             color: green
         queries:
           - query: __name__:up and env:${env} and job:${job} | sum()
+      - title: Errors
+        description: The first threshold leaves out its value, so its color holds from the lowest.
+        kind: stat
+        width: 25
+        height: 200
+        unit: per_second
+        calculation: last
+        thresholds:
+          - color: green
+          - value: 1
+            color: red
+        queries:
+          - query: __name__:mock_errors_total and env:${env} and job:${job} | rate(5m) | sum()

@@ -11,8 +11,12 @@ func (check *documentCheck) panel(at place, panel Panel) {
 		check.add(at, "min %v is not below max %v", *panel.Min, *panel.Max)
 	}
 	for position, threshold := range panel.Thresholds {
-		if position > 0 && threshold.Value <= panel.Thresholds[position-1].Value {
-			check.add(at.item("thresholds", position), "value %v is not above the threshold before it", threshold.Value)
+		if position == 0 || threshold.Value == nil {
+			continue
+		}
+		previous := panel.Thresholds[position-1].Value
+		if previous != nil && *threshold.Value <= *previous {
+			check.add(at.item("thresholds", position), "value %v is not above the threshold before it", *threshold.Value)
 		}
 	}
 	check.kindOnly(at, panel.Kind, "orientation", panel.Orientation != "", BarKind)

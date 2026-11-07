@@ -85,6 +85,52 @@ func TestAValueMappingReadsInEitherForm(t *testing.T) {
 	}
 }
 
+// The first threshold may leave out its value, its color then starting from the lowest; no later one may.
+func TestOnlyTheFirstThresholdLeavesOutItsValue(t *testing.T) {
+	spec := changed(t, "        height: 300\n",
+		"        height: 300\n        thresholds:\n          - {color: red}\n          - {value: 1, color: green}\n")
+	dashboard, err := ParseDashboard(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	thresholds := dashboard.Rows[0].Panels[0].Thresholds
+	if thresholds[0].Value != nil || thresholds[1].Value == nil || *thresholds[1].Value != 1 {
+		t.Errorf("thresholds = %+v", thresholds)
+	}
+	refused := changed(t, "        height: 300\n",
+		"        height: 300\n        thresholds:\n          - {value: 1, color: green}\n          - {color: red}\n")
+	if _, err := ParseDashboard(refused); err == nil || !strings.Contains(err.Error(), "threshold 2") {
+		t.Errorf("a later threshold without a value: err = %v, want it refused at threshold 2", err)
+	}
+}
+
+// A panel colors its values from one source: its thresholds, or its value mappings' colors.
+func TestAPanelColorsItsValuesFromOneSource(t *testing.T) {
+	thresholds := "        thresholds:\n          - {color: red}\n          - {value: 1, color: green}\n"
+	for name, testCase := range map[string]struct {
+		written string
+		refused bool
+	}{
+		"thresholds and a colored mapping": {
+			"        value_mappings:\n          \"0\": { text: mock-down, color: red }\n" + thresholds, true,
+		},
+		"colored mappings alone": {
+			"        value_mappings:\n          \"0\": { text: mock-down, color: red }\n", false,
+		},
+		"thresholds and a mapping without color": {
+			"        value_mappings:\n          \"0\": { text: mock-down }\n" + thresholds, false,
+		},
+	} {
+		_, err := ParseDashboard(changed(t, "        height: 300\n", "        height: 300\n"+testCase.written))
+		if testCase.refused && (err == nil || !strings.Contains(err.Error(), "row 1, panel 1, value mapping 0")) {
+			t.Errorf("%s: err = %v, want it refused at value mapping 0", name, err)
+		}
+		if !testCase.refused && err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
 func TestEveryExampleDashboardParses(t *testing.T) {
 	examples, err := filepath.Glob("../examples/dashboards/*.yml")
 	if err != nil || len(examples) == 0 {

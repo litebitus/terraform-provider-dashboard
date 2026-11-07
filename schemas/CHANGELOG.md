@@ -5,6 +5,8 @@ Each version is the format a dashboard document names in its `schema_version`, a
 ## 1.1 — unreleased
 
 - A value mapping is its `text` and an optional `color`, which puts the value in a legend.
+- The first threshold may leave out `value`: its color then holds from the lowest.
+- A panel with `thresholds` holds no value mapping with a `color`.
 
 ### Deprecated
 

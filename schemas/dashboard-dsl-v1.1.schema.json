@@ -198,7 +198,8 @@
         "thresholds": {
           "description": "The colors a value takes, from the lowest up.",
           "type": "array",
-          "items": { "$ref": "#/$defs/threshold" }
+          "prefixItems": [{ "$ref": "#/$defs/threshold" }],
+          "items": { "$ref": "#/$defs/threshold", "required": ["value"] }
         },
         "value_mappings": {
           "description": "Value to what is shown in its place.",
@@ -256,15 +257,28 @@
         {
           "if": { "properties": { "kind": { "const": "map" } } },
           "then": { "required": ["location_field"] }
+        },
+        {
+          "if": { "required": ["thresholds"] },
+          "then": {
+            "properties": {
+              "value_mappings": {
+                "additionalProperties": { "not": { "type": "object", "required": ["color"] } }
+              }
+            }
+          }
         }
       ]
     },
     "threshold": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["value", "color"],
+      "required": ["color"],
       "properties": {
-        "value": { "description": "The value the color starts at.", "type": "number" },
+        "value": {
+          "description": "The value the color starts at; required on every threshold but the first, whose color without one starts from the lowest.",
+          "type": "number"
+        },
         "color": { "description": "The color.", "$ref": "#/$defs/color" }
       }
     },

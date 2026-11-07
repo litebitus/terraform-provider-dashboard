@@ -81,7 +81,7 @@ const (
 	lineFillOpacity = 0
 )
 
-// baseColor is what a value below the lowest threshold is drawn in: the theme's text color.
+// baseColor is what a value below the lowest threshold is drawn in where no threshold states it: the theme's text color.
 const baseColor = "text"
 
 // element is a panel among the dashboard's elements, which the layout places by name.
@@ -229,7 +229,11 @@ func referenceID(position int) string {
 func fieldDefaults(panel dashboarddsl.Panel) map[string]any {
 	steps := []map[string]any{{"color": baseColor, "value": nil}}
 	for _, threshold := range panel.Thresholds {
-		steps = append(steps, map[string]any{"color": colors[threshold.Color], "value": threshold.Value})
+		if threshold.Value == nil {
+			steps[0]["color"] = colors[threshold.Color]
+			continue
+		}
+		steps = append(steps, map[string]any{"color": colors[threshold.Color], "value": *threshold.Value})
 	}
 	mappings := []any{}
 	if len(panel.ValueMappings) > 0 {

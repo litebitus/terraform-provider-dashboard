@@ -114,8 +114,8 @@ A call is written as in DQL's stages: the function's name, then its arguments in
 | `decimals` | how many decimals a value shows; optional |
 | `min`, `max` | the range values are drawn against; required for `gauge` |
 | `calculation` | the one value of each series the panel shows: `first`, `last`, `max`, `mean`, `min` or `sum`; required for `bar`, `gauge`, `pie` and `stat` |
-| `thresholds` | the colors a value takes, each a `value` and a `color` from the lowest up; optional |
-| `value_mappings` | value → what is shown in its place: its `text`, and a `color`, optional, which a legend names the value by; optional |
+| `thresholds` | the colors a value takes, from the lowest up: each a `color` that holds from its `value` up to the next threshold; the first may leave out `value`, its color then holding from the lowest; optional |
+| `value_mappings` | value → what is shown in its place: its `text`, and a `color`, optional; optional |
 | `legend` | `show` and, for a shown legend, `position`, `bottom` or `right`; optional |
 | `axis` | `scale`, `linear` or `log`, and `label`; optional |
 | `stacked` | whether series stack; optional, `false` by default |
@@ -125,7 +125,14 @@ A call is written as in DQL's stages: the function's name, then its arguments in
 | `links` | links from the panel, each a `title` and a `url`, which may name variables; optional |
 | `queries` | the panel's queries; every kind but `text` |
 
-A color is one of `blue`, `green`, `grey`, `orange`, `purple`, `red` or `yellow`.
+A color is one of `blue`, `green`, `grey`, `orange`, `purple`, `red` or `yellow`. Where the first threshold states a `value`, a value below it takes no threshold color, and a renderer draws it in its UI's default.
+
+A panel colors its values from one source:
+
+| Source | A value's color | The legend lists |
+|---|---|---|
+| `thresholds` | the threshold it falls in; a mapping in the panel states no `color` | the thresholds' ranges |
+| value mappings' `color` | its mapping's | each mapped value's `text`, in its color |
 
 ### Query
 
@@ -200,7 +207,7 @@ A `query` is DQL with pipe stages, the language of the [DQL compiler](https://gi
 
 ### Grafana
 
-Grafana's target schemas are of kind `grafana-v2`, Grafana's V2 Resource dashboard. A document's `id` is the dashboard's name in Grafana; without one, Grafana assigns a name and keeps it with the dashboard's file. A `metrics` source reads the UI's default data source; Grafana renders no `logs` source.
+Grafana's target schemas are of kind `grafana-v2`, Grafana's V2 Resource dashboard. A document's `id` is the dashboard's name in Grafana; without one, Grafana assigns a name and keeps it with the dashboard's file. A `metrics` source reads the UI's default data source; Grafana renders no `logs` source. Its default for a value below the first threshold is the theme's text color.
 
 | Refused | Why |
 |---|---|

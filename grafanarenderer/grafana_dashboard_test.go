@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -244,6 +245,30 @@ func TestAValueMappingRendersItsTextAndColor(t *testing.T) {
 	}
 	if _, colored := up["color"]; up["text"] != "mock-up" || colored || up["index"] != 1 {
 		t.Errorf("mapping 1 = %v, want its text and no color", up)
+	}
+}
+
+// A first threshold without a value colors the base step, below the lowest; without one the base step is the text color.
+func TestAThresholdWithoutAValueColorsTheBaseStep(t *testing.T) {
+	one := 1.0
+	for name, testCase := range map[string]struct {
+		thresholds []dashboarddsl.Threshold
+		steps      []map[string]any
+	}{
+		"stated": {
+			[]dashboarddsl.Threshold{{Color: "red"}, {Value: &one, Color: "green"}},
+			[]map[string]any{{"color": "red", "value": nil}, {"color": "green", "value": 1.0}},
+		},
+		"left to the renderer": {
+			[]dashboarddsl.Threshold{{Value: &one, Color: "green"}},
+			[]map[string]any{{"color": baseColor, "value": nil}, {"color": "green", "value": 1.0}},
+		},
+	} {
+		defaults := fieldDefaults(dashboarddsl.Panel{Thresholds: testCase.thresholds})
+		steps := defaults["thresholds"].(map[string]any)["steps"]
+		if !reflect.DeepEqual(steps, testCase.steps) {
+			t.Errorf("%s: steps = %v, want %v", name, steps, testCase.steps)
+		}
 	}
 }
 
