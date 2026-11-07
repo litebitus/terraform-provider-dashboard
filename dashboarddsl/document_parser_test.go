@@ -55,9 +55,32 @@ func TestADocumentParsesIntoItsDashboard(t *testing.T) {
 }
 
 func TestADocumentStatesItsMajorOrAMinor(t *testing.T) {
-	for _, stated := range []string{`"1"`, `"1.0"`} {
+	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`} {
 		if _, err := ParseDashboard(changed(t, `schema_version: "1"`, "schema_version: "+stated)); err != nil {
 			t.Errorf("schema_version %s: %v", stated, err)
+		}
+	}
+}
+
+// A value mapping is its text and the color stated for it; the deprecated form, the text alone, reads as a mapping with no color.
+func TestAValueMappingReadsInEitherForm(t *testing.T) {
+	spec := changed(t, "        height: 300\n", "        height: 300\n        value_mappings:\n"+
+		"          \"0\": { text: mock-down, color: red }\n          \"1\": mock-up\n")
+	dashboard, err := ParseDashboard(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mappings := dashboard.Rows[0].Panels[0].ValueMappings
+	if mappings["0"] != (ValueMapping{Text: "mock-down", Color: "red"}) || mappings["1"] != (ValueMapping{Text: "mock-up"}) {
+		t.Errorf("value mappings = %+v", mappings)
+	}
+	for name, mapping := range map[string]string{
+		"no text":       `{ color: red }`,
+		"unknown color": `{ text: mock-down, color: mock-color }`,
+	} {
+		refused := changed(t, "        height: 300\n", "        height: 300\n        value_mappings:\n          \"0\": "+mapping+"\n")
+		if _, err := ParseDashboard(refused); err == nil {
+			t.Errorf("%s: the mapping %s parsed", name, mapping)
 		}
 	}
 }

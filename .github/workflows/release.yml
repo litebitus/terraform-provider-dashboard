@@ -93,17 +93,19 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
 
-      - name: Stamp the changelog, tag and push
+      - name: Stamp the changelogs, tag and push
         if: ${{ !inputs.dry_run }}
         env:
           NEXT: ${{ steps.version.outputs.next }}
         run: |
           set -euo pipefail
           awk '/^## Unreleased$/ { inside = 1; next } /^## / { inside = 0 } inside' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
-          sed -i "s/^## Unreleased$/## Unreleased\n\n## ${NEXT} — $(date -u +%Y-%m-%d)/" CHANGELOG.md
+          export RELEASE_DATE="$(date -u +%Y-%m-%d)"
+          perl -pi -e 's/^## Unreleased$/$&\n\n## $ENV{NEXT} — $ENV{RELEASE_DATE}/i' CHANGELOG.md
+          perl -pi -e 's/^## (\d+\.\d+) — unreleased$/## $1 — provider $ENV{NEXT}, $ENV{RELEASE_DATE}/i' schemas/CHANGELOG.md
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
+          git add CHANGELOG.md schemas/CHANGELOG.md
           git commit -m "docs(changelog): ${NEXT}"
           git tag -a "$NEXT" -m "Release $NEXT"
           git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "$NEXT"

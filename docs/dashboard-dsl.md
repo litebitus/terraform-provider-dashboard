@@ -115,7 +115,7 @@ A call is written as in DQL's stages: the function's name, then its arguments in
 | `min`, `max` | the range values are drawn against; required for `gauge` |
 | `calculation` | the one value of each series the panel shows: `first`, `last`, `max`, `mean`, `min` or `sum`; required for `bar`, `gauge`, `pie` and `stat` |
 | `thresholds` | the colors a value takes, each a `value` and a `color` from the lowest up; optional |
-| `value_mappings` | value → the text shown in its place; optional |
+| `value_mappings` | value → what is shown in its place: its `text`, and a `color`, optional, which a legend names the value by; optional |
 | `legend` | `show` and, for a shown legend, `position`, `bottom` or `right`; optional |
 | `axis` | `scale`, `linear` or `log`, and `label`; optional |
 | `stacked` | whether series stack; optional, `false` by default |

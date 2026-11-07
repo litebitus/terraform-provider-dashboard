@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Dashboard DSL
+  - `schemas/dashboard-dsl-v1.1.schema.json`: a value mapping is its `text` and an optional `color`, which puts the value in a legend.
+
+### Deprecated
+
+- Dashboard DSL
+  - `value_mappings`: a value mapped to a string, such as `"0": none`; write it as `"0": { text: none }`.
+
 ## v0.1.0 — 2026-11-06
 
 - Rendering

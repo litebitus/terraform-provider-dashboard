@@ -1,6 +1,8 @@
 // Package dashboarddsl reads a dashboard DSL document: what a dashboard shows, in words no UI owns.
 package dashboarddsl
 
+import "go.yaml.in/yaml/v4"
+
 // Dashboard is a dashboard document: a dashboard holds rows, a row holds panels, and a panel holds queries.
 type Dashboard struct {
 	SchemaVersion   string              `yaml:"schema_version"`
@@ -58,33 +60,49 @@ type Row struct {
 
 // Panel is one thing a dashboard draws.
 type Panel struct {
-	Title         string            `yaml:"title"`
-	Description   string            `yaml:"description"`
-	Kind          string            `yaml:"kind"`
-	Width         *int              `yaml:"width"`
-	Height        int               `yaml:"height"`
-	RepeatFor     string            `yaml:"repeat_for"`
-	Unit          string            `yaml:"unit"`
-	Decimals      *int              `yaml:"decimals"`
-	Min           *float64          `yaml:"min"`
-	Max           *float64          `yaml:"max"`
-	Calculation   string            `yaml:"calculation"`
-	Thresholds    []Threshold       `yaml:"thresholds"`
-	ValueMappings map[string]string `yaml:"value_mappings"`
-	Legend        *Legend           `yaml:"legend"`
-	Axis          *Axis             `yaml:"axis"`
-	Stacked       bool              `yaml:"stacked"`
-	Orientation   string            `yaml:"orientation"`
-	LocationField string            `yaml:"location_field"`
-	Content       string            `yaml:"content"`
-	Links         []Link            `yaml:"links"`
-	Queries       []Query           `yaml:"queries"`
+	Title         string                  `yaml:"title"`
+	Description   string                  `yaml:"description"`
+	Kind          string                  `yaml:"kind"`
+	Width         *int                    `yaml:"width"`
+	Height        int                     `yaml:"height"`
+	RepeatFor     string                  `yaml:"repeat_for"`
+	Unit          string                  `yaml:"unit"`
+	Decimals      *int                    `yaml:"decimals"`
+	Min           *float64                `yaml:"min"`
+	Max           *float64                `yaml:"max"`
+	Calculation   string                  `yaml:"calculation"`
+	Thresholds    []Threshold             `yaml:"thresholds"`
+	ValueMappings map[string]ValueMapping `yaml:"value_mappings"`
+	Legend        *Legend                 `yaml:"legend"`
+	Axis          *Axis                   `yaml:"axis"`
+	Stacked       bool                    `yaml:"stacked"`
+	Orientation   string                  `yaml:"orientation"`
+	LocationField string                  `yaml:"location_field"`
+	Content       string                  `yaml:"content"`
+	Links         []Link                  `yaml:"links"`
+	Queries       []Query                 `yaml:"queries"`
 }
 
 // Threshold is the color a value takes from Value up.
 type Threshold struct {
 	Value float64 `yaml:"value"`
 	Color string  `yaml:"color"`
+}
+
+// ValueMapping is what a value is shown as: its text, and the color it is shown in where one is stated.
+type ValueMapping struct {
+	Text  string `yaml:"text"`
+	Color string `yaml:"color"`
+}
+
+// UnmarshalYAML reads a mapping, or the deprecated form, the text alone.
+func (mapping *ValueMapping) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.ScalarNode {
+		mapping.Text = node.Value
+		return nil
+	}
+	type mappingFields ValueMapping
+	return node.Decode((*mappingFields)(mapping))
 }
 
 // Legend is whether a panel shows its legend, and where.

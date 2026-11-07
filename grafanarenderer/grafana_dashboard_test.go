@@ -230,6 +230,23 @@ func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 	}
 }
 
+// A value mapping renders its text, and its color where one is stated, which is what puts it in Grafana's legend.
+func TestAValueMappingRendersItsTextAndColor(t *testing.T) {
+	defaults := fieldDefaults(dashboarddsl.Panel{ValueMappings: map[string]dashboarddsl.ValueMapping{
+		"0": {Text: "mock-down", Color: "red"},
+		"1": {Text: "mock-up"},
+	}})
+	mappings := defaults["mappings"].([]any)
+	options := mappings[0].(map[string]any)["options"].(map[string]any)
+	down, up := options["0"].(map[string]any), options["1"].(map[string]any)
+	if down["text"] != "mock-down" || down["color"] != "red" || down["index"] != 0 {
+		t.Errorf("mapping 0 = %v", down)
+	}
+	if _, colored := up["color"]; up["text"] != "mock-up" || colored || up["index"] != 1 {
+		t.Errorf("mapping 1 = %v, want its text and no color", up)
+	}
+}
+
 func TestPanelsShareTheGridsColumns(t *testing.T) {
 	half, quarter := 50, 25
 	for name, testCase := range map[string]struct {

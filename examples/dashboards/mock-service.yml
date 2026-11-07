@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.0.schema.json
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.1.schema.json
 schema_version: "1"
 target_schemas: [grafana-v2-13]
 id: mock-service
@@ -25,3 +25,34 @@ rows:
         queries:
           - query: __name__:mock_requests_total and env:${env} and job:${job} | rate(5m) | sum() by job
             legend_format: "{{job}}"
+
+  - title: Health
+    panels:
+      - title: Up by job
+        description: Each value mapped to its text and color; the legend names the two states.
+        kind: status_history
+        height: 200
+        unit: count
+        value_mappings:
+          "0": { text: down, color: red }
+          "1": { text: up, color: green }
+        queries:
+          - query: __name__:up and env:${env} and job:${job} | min() by job
+            legend_format: "{{job}}"
+            min_interval: 1m
+      - title: Jobs up
+        description: The deprecated form, a value mapped to its text alone, colored by the thresholds.
+        kind: stat
+        width: 25
+        height: 200
+        unit: count
+        calculation: last
+        value_mappings:
+          "0": none  # the deprecated form, kept as its example
+        thresholds:
+          - value: 0
+            color: red
+          - value: 1
+            color: green
+        queries:
+          - query: __name__:up and env:${env} and job:${job} | sum()

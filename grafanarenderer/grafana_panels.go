@@ -235,7 +235,12 @@ func fieldDefaults(panel dashboarddsl.Panel) map[string]any {
 	if len(panel.ValueMappings) > 0 {
 		options := map[string]any{}
 		for index, value := range slices.Sorted(maps.Keys(panel.ValueMappings)) {
-			options[value] = map[string]any{"text": panel.ValueMappings[value], "index": index}
+			mapping := panel.ValueMappings[value]
+			option := map[string]any{"text": mapping.Text, "index": index}
+			if mapping.Color != "" {
+				option["color"] = colors[mapping.Color]
+			}
+			options[value] = option
 		}
 		mappings = append(mappings, map[string]any{"type": "value", "options": options})
 	}
