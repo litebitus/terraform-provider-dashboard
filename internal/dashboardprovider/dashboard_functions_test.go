@@ -92,7 +92,8 @@ func TestAProblemBlamesTheArgumentItLiesWith(t *testing.T) {
 		says     string
 	}{
 		"invalid spec": {
-			strings.Replace(mockSpec, "timezone: utc\n", "", 1), nil, specArgument, "missing property 'timezone'",
+			strings.Replace(mockSpec, "timezone: utc\n", "", 1), nil, specArgument,
+			"error: `timezone` is required\n --> dashboard:\"Mock\":1:1\n",
 		},
 		"refused by Grafana": {
 			strings.Replace(withTargetSchemas("grafana-v2-13"), "kind: time_series", "kind: tag_cloud", 1), nil,

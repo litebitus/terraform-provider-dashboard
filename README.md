@@ -6,7 +6,7 @@ Terraform functions and data sources that render dashboard DSL documents into ea
 
 - `provider::dashboard::render` and the `dashboard_render` data source render a document into the dashboard JSON of its target schema, today Grafana's V2 Resource dashboard, `grafana-v2-13`.
 - A document names the target schemas it renders for; the call, the document and the provider's `default_target_schemas` choose one, in that order, so moving to a new UI version is one setting.
-- A document is held to the [JSON Schema](schemas/) its `schema_version` names, published with every release, and to the rules a schema cannot state; every problem fails the plan, each named at its place.
+- A document is held to the [JSON Schema](schemas/) its `schema_version` names, published with every release, and to the rules a schema cannot state; every problem fails the plan, each reported as a compiler reports one, at its line and column.
 - Every render is checked against its target schema's JSON Schema, generated from the UI's own schema and published with every release.
 - What a UI cannot draw is refused, naming the dashboard, the panel and why, so a plan never ships a dashboard that draws less than it says.
 - Queries are DQL, compiled with the [DQL compiler](https://github.com/litebitus/dql-compiler) bundled in the release.

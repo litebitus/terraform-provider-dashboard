@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/litebitus/dql-compiler/dqlsyntax"
+	yamldslspec "github.com/litebitus/yaml-dsl-spec/go"
 )
 
 // The choice functions a variable's choices call.
@@ -34,7 +35,8 @@ func (variable Variable) ChoiceCall() (ChoiceCall, error) {
 	case FieldValuesChoices:
 		if len(arguments) < 1 || len(arguments) > 2 || arguments[0].Kind != dqlsyntax.FieldCallArgument ||
 			(len(arguments) == 2 && arguments[1].Kind != dqlsyntax.QuotedCallArgument) {
-			return ChoiceCall{}, fmt.Errorf("%q takes a field and, optionally, a quoted query", call.Function)
+			return ChoiceCall{}, fmt.Errorf("%s takes a field and, optionally, a quoted query",
+				yamldslspec.CodeSpan(call.Function))
 		}
 		read.Field = arguments[0].Text
 		if len(arguments) == 2 {
@@ -42,26 +44,26 @@ func (variable Variable) ChoiceCall() (ChoiceCall, error) {
 		}
 	case ListChoices:
 		if len(arguments) == 0 {
-			return ChoiceCall{}, fmt.Errorf("%q takes the values, quoted", call.Function)
+			return ChoiceCall{}, fmt.Errorf("%s takes the values, quoted", yamldslspec.CodeSpan(call.Function))
 		}
 		for _, argument := range arguments {
 			if argument.Kind != dqlsyntax.QuotedCallArgument {
-				return ChoiceCall{}, fmt.Errorf("%q takes the values, quoted", call.Function)
+				return ChoiceCall{}, fmt.Errorf("%s takes the values, quoted", yamldslspec.CodeSpan(call.Function))
 			}
 			read.Values = append(read.Values, argument.Text)
 		}
 	case FreeTextChoices:
 		if len(arguments) != 0 {
-			return ChoiceCall{}, fmt.Errorf("%q takes no arguments", call.Function)
+			return ChoiceCall{}, fmt.Errorf("%s takes no arguments", yamldslspec.CodeSpan(call.Function))
 		}
 	case RangeChoices:
 		if len(arguments) != 1 || arguments[0].Kind != dqlsyntax.FieldCallArgument {
-			return ChoiceCall{}, fmt.Errorf("%q takes a field", call.Function)
+			return ChoiceCall{}, fmt.Errorf("%s takes a field", yamldslspec.CodeSpan(call.Function))
 		}
 		read.Field = arguments[0].Text
 	default:
-		return ChoiceCall{}, fmt.Errorf("unknown choice function %q; choices call %s",
-			call.Function, oneOf(choiceFunctions))
+		return ChoiceCall{}, fmt.Errorf("unknown choice function %s; choices call %s",
+			yamldslspec.CodeSpan(call.Function), oneOf(choiceFunctions))
 	}
 	return read, nil
 }

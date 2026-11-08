@@ -12,7 +12,7 @@ A Terraform provider that renders dashboard DSL documents at plan time. A docume
 - `spec` is the document's text, which states everything about the dashboard, its identity included, in its `id`.
 - Both render through one path and differ in one thing: the data source also reads the provider's `default_target_schemas`, which Terraform never shows a function.
 - A render is a function of the document and its target schema alone, the same on every run: an identity the UI assigns never enters it, so a plan shows no change until the document does.
-- A problem fails the plan on the input it lies with: the document's at its place, `row 1, panel 2, query 1: …`, and a target schema that cannot be chosen on `target_schema`, or the options for the function.
+- A problem fails the plan on the input it lies with: the document's at its position, `dashboard:"<title>":<line>:<column>`, and a target schema that cannot be chosen on `target_schema`, or the options for the function.
 
 ### Choosing the target schema
 
@@ -51,6 +51,12 @@ A document is read in two steps, and every problem either finds is reported:
 
 1. `dashboarddsl` holds its shape to the schema its `schema_version` names, which the `schemas` package resolves among the schema files it embeds.
 2. `dashboarddsl` holds it to the DSL's rules a schema cannot state, its queries and the filter parsed as DQL and a variable's `choices` read by the DQL compiler's call parser.
+
+The text is read, and its shape validated, by the [YAML DSL standard](https://github.com/litebitus/yaml-dsl-spec)'s packages, and every problem is written by its diagnostic renderer, as a compiler writes an error, with no color and no division to width:
+
+- The source is named `dashboard:` and the document's `title` as a JSON string, such as `dashboard:"Mock Service"`; a document with no string `title` is named `dashboard:{title}`.
+- A problem with a value is placed at the value, a field that is not allowed at its key, and a problem with a whole block, such as a row's widths, at the block.
+- Problems are apart by a blank line, in document order, and a last line counts them: `1 error`, `2 errors`.
 
 ## Target schemas
 

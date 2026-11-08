@@ -1,59 +1,67 @@
 package dashboarddsl
 
 import (
-	"errors"
-	"fmt"
 	"slices"
 	"strings"
+
+	yamldslspec "github.com/litebitus/yaml-dsl-spec/go"
 )
 
-// place is where something stands in a document, as a reader counts: "row 1, panel 2, query 1".
-type place []string
+// documentPath is where a value stands in a document: the keys and list indexes from the root down to it.
+type documentPath []pathStep
 
-var listItemNames = map[string]string{
-	"annotations":    "annotation",
-	"links":          "link",
-	"panels":         "panel",
-	"queries":        "query",
-	"rows":           "row",
-	"tags":           "tag",
-	"target_schemas": "target schema",
-	"thresholds":     "threshold",
+type pathStep struct {
+	entryKey  string
+	itemIndex int
+	isItem    bool
 }
 
-var mapEntryNames = map[string]string{
-	"value_mappings": "value mapping",
-	"variables":      "variable",
+// field is the path of a map's value, by its key.
+func (path documentPath) field(entryKey string) documentPath {
+	return append(slices.Clip(path), pathStep{entryKey: entryKey})
 }
 
-func (at place) with(segment string) place { return append(slices.Clone(at), segment) }
-
-// item is the place of a list's item, counted from 1.
-func (at place) item(listField string, position int) place {
-	return at.with(fmt.Sprintf("%s %d", listItemNames[listField], position+1))
+// item is the path of a list's item, by its index.
+func (path documentPath) item(itemIndex int) documentPath {
+	return append(slices.Clip(path), pathStep{itemIndex: itemIndex, isItem: true})
 }
 
-// entry is the place of a map's entry, by its key.
-func (at place) entry(mapField, key string) place {
-	return at.with(fmt.Sprintf("%s %s", mapEntryNames[mapField], key))
-}
-
-func (at place) problem(format string, arguments ...any) error {
-	message := fmt.Sprintf(format, arguments...)
-	if len(at) == 0 {
-		return errors.New(message)
+func (path documentPath) nodePositions(documentRoot yamldslspec.Node) (yamldslspec.Position, yamldslspec.Position) {
+	heldNode, keyPosition := documentRoot, documentRoot.Position
+	for _, step := range path {
+		childNode, childKeyPosition, isFound := step.childOf(heldNode)
+		if !isFound {
+			return heldNode.Position, heldNode.Position
+		}
+		heldNode, keyPosition = childNode, childKeyPosition
 	}
-	return fmt.Errorf("%s: %s", strings.Join(at, ", "), message)
+	return heldNode.Position, keyPosition
 }
 
-// oneOf is a set of values as a sentence names them: `"a", "b" or "c"`.
+func (step pathStep) childOf(holderNode yamldslspec.Node) (yamldslspec.Node, yamldslspec.Position, bool) {
+	if step.isItem {
+		if holderNode.Kind != yamldslspec.NodeList || step.itemIndex < 0 || step.itemIndex >= len(holderNode.Items) {
+			return yamldslspec.Node{}, yamldslspec.Position{}, false
+		}
+		itemNode := holderNode.Items[step.itemIndex]
+		return itemNode, itemNode.Position, true
+	}
+	for _, mapEntry := range holderNode.Entries {
+		if mapEntry.Key == step.entryKey {
+			return mapEntry.Value, mapEntry.KeyPosition, true
+		}
+	}
+	return yamldslspec.Node{}, yamldslspec.Position{}, false
+}
+
+// oneOf is a set of values as a sentence names them, each fenced: "`a`, `b` or `c`".
 func oneOf(values []string) string {
-	quoted := make([]string, len(values))
+	fenced := make([]string, len(values))
 	for index, value := range values {
-		quoted[index] = fmt.Sprintf("%q", value)
+		fenced[index] = yamldslspec.CodeSpan(value)
 	}
-	if len(quoted) == 1 {
-		return quoted[0]
+	if len(fenced) == 1 {
+		return fenced[0]
 	}
-	return strings.Join(quoted[:len(quoted)-1], ", ") + " or " + quoted[len(quoted)-1]
+	return strings.Join(fenced[:len(fenced)-1], ", ") + " or " + fenced[len(fenced)-1]
 }

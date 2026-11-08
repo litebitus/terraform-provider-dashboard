@@ -263,7 +263,13 @@
           "then": {
             "properties": {
               "value_mappings": {
-                "additionalProperties": { "not": { "type": "object", "required": ["color"] } }
+                "additionalProperties": {
+                  "not": {
+                    "description": "In a panel with `thresholds`, a value mapping takes no `color`: the thresholds color the panel's values.",
+                    "type": "object",
+                    "required": ["color"]
+                  }
+                }
               }
             }
           }

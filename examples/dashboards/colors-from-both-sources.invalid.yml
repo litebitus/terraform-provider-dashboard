@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.1.schema.json
+schema_version: "1"
+target_schemas: [grafana-v2-13]
+title: Colors From Both Sources
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+rows:
+  - title: Health
+    panels:
+      - title: Up
+        description: Refused, its values colored by both its thresholds and a value mapping's color.
+        kind: stat
+        height: 200
+        unit: count
+        calculation: last
+        value_mappings:
+          "0": { text: down, color: red }  # the conflict, kept as its example
+        thresholds:
+          - color: red
+          - value: 1
+            color: green
+        queries:
+          - query: __name__:up | min()
