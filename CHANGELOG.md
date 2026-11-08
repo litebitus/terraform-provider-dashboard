@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.1 — 2026-11-08
+
 - Dashboard DSL
   - `schemas/dashboard-dsl-v1.1.schema.json`: a value mapping is its `text` and an optional `color`, which puts the value in a legend.
   - The first threshold may leave out `value`, its color then holding from the lowest.

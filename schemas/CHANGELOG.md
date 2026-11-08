@@ -2,7 +2,7 @@
 
 Each version is the format a dashboard document names in its `schema_version`, and the schema file of that name. A version not yet released is headed `## <version> — unreleased`; the release workflow stamps it with the provider release that ships it and the date.
 
-## 1.1 — unreleased
+## 1.1 — provider v0.1.1, 2026-11-08
 
 - A value mapping is its `text` and an optional `color`, which puts the value in a legend.
 - The first threshold may leave out `value`: its color then holds from the lowest.
