@@ -25,6 +25,16 @@ rows:
         queries:
           - query: __name__:mock_requests_total and env:${env} and job:${job} | rate(5m) | sum() by job
             legend_format: "{{job}}"
+      - title: Requests and errors
+        description: Two queries, each drawn as its own series and named by its legend.
+        kind: time_series
+        height: 300
+        unit: per_second
+        queries:
+          - query: __name__:mock_requests_total and env:${env} and job:${job} | rate(5m) | sum()
+            legend_format: requests
+          - query: __name__:mock_errors_total and env:${env} and job:${job} | rate(5m) | sum()
+            legend_format: errors
 
   - title: Health
     panels:
