@@ -231,3 +231,7 @@ OpenSearch Dashboards' render is saved objects: the dashboard, one visualization
 | a `legend_format` other than the split field's name | a series is named by its split's value |
 | `unit` and `decimals` that differ between panels on one field | values are formatted per field on the index pattern |
 | `repeat_for`, `links`, `annotations`, `state_timeline`, `status_history`, `value_mappings` | OpenSearch Dashboards has no equivalent |
+
+## TODO
+
+- Library panels: a panel defined once and referenced from several dashboards, so an edit to its definition reaches every dashboard that references it.
