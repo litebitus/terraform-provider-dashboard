@@ -195,7 +195,7 @@ func (render *dashboardRender) panelQueries(at string, queries []dashboarddsl.Qu
 		if query.Source != nil && query.Source.Kind != dashboarddsl.MetricsSource {
 			render.refuse(queryAt, "Grafana reads no OpenSearch data source")
 		}
-		expression, err := render.queries.promQL(query.Query)
+		expression, err := render.queries.promQL(query.Query, query.Source)
 		if err != nil {
 			render.refuse(queryAt, err.Error())
 		}

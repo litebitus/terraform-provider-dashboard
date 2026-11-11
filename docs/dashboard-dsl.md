@@ -69,6 +69,7 @@ A document is a dashboard: a dashboard holds rows, a row holds panels, and a pan
 | `kind` | `metrics` or `logs` |
 | `index_pattern` | for `logs`, the indices the queries read |
 | `time_field` | for `logs`, the field the time range filters on |
+| `reporting_filter` | for `metrics`, a DQL filter selecting the series the source emits while it reports; optional |
 
 ### Variable
 

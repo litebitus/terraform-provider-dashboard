@@ -34,7 +34,7 @@ func validateDashboard(dashboard Dashboard, documentRoot yamldslspec.Node) []yam
 	check.targetSchemas(at.field("target_schemas"), dashboard.TargetSchemas)
 	check.source(at.field("source"), dashboard.Source)
 	if dashboard.Filter != "" {
-		check.filter(at.field("filter"), dashboard.Filter)
+		check.filter(at.field("filter"), "filter", dashboard.Filter)
 	}
 	check.links(at.field("links"), dashboard.Links)
 	for position, annotation := range dashboard.Annotations {
@@ -76,18 +76,26 @@ func (check *documentCheck) source(at documentPath, source *Source) {
 		}
 		check.addAtKey(at.field(writtenField), "`source`: a `metrics` source takes no `index_pattern` or `time_field`")
 	}
+	if source == nil || source.ReportingFilter == "" {
+		return
+	}
+	if source.Kind == LogsSource {
+		check.addAtKey(at.field("reporting_filter"), "`source`: a `logs` source takes no `reporting_filter`")
+		return
+	}
+	check.filter(at.field("reporting_filter"), "reporting_filter", source.ReportingFilter)
 }
 
-func (check *documentCheck) filter(at documentPath, filter string) {
+func (check *documentCheck) filter(at documentPath, field, filter string) {
 	parsed, err := dqlsyntax.ParseQuery(filter, QueryGrammarVersion())
 	if err != nil {
-		check.addAtValue(at, "`filter`: %v", err)
+		check.addAtValue(at, "%s: %v", yamldslspec.CodeSpan(field), err)
 		return
 	}
 	if operands := parsed.Expression.Operands; len(operands) != 1 || operands[0].Query == nil || len(operands[0].Query.Stages) > 0 {
-		check.addAtValue(at, "`filter` is a DQL filter, with no stages or arithmetic")
+		check.addAtValue(at, "%s is a DQL filter, with no stages or arithmetic", yamldslspec.CodeSpan(field))
 	}
-	check.references(at, "filter", filter)
+	check.references(at, field, filter)
 }
 
 func (check *documentCheck) query(at documentPath, query string) {

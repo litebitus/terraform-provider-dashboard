@@ -70,8 +70,18 @@ func TestADocumentParsesIntoItsDashboard(t *testing.T) {
 	}
 }
 
+func TestAMetricsSourceReadsItsReportingFilter(t *testing.T) {
+	dashboard, err := ParseDashboard(changed(t, "  kind: metrics\n", "  kind: metrics\n  reporting_filter: job:mock-exporter\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dashboard.Source.ReportingFilter != "job:mock-exporter" {
+		t.Errorf("source = %+v", dashboard.Source)
+	}
+}
+
 func TestADocumentStatesItsMajorOrAMinor(t *testing.T) {
-	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`} {
+	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`} {
 		if _, err := ParseDashboard(changed(t, `schema_version: "1"`, "schema_version: "+stated)); err != nil {
 			t.Errorf("schema_version %s: %v", stated, err)
 		}
@@ -193,12 +203,12 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"empty document": {"", "the document is empty", "dashboard:{title}:1:1"},
 		"unknown version": {
 			changed(t, `schema_version: "1"`, `schema_version: "2"`),
-			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\"]",
+			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\"]",
 			mockSource + ":1:17",
 		},
 		"unquoted version": {
 			changed(t, `schema_version: "1"`, `schema_version: 1`),
-			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"` or `\"1.1\"`",
+			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"` or `\"1.2\"`",
 			mockSource + ":1:17",
 		},
 		"two target schemas of one kind": {
@@ -248,6 +258,19 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"metrics source with an index pattern": {
 			changed(t, "  kind: metrics\n", "  kind: metrics\n  index_pattern: mock-*\n"),
 			"`source`: a `metrics` source takes no `index_pattern` or `time_field`", mockSource + ":8:3",
+		},
+		"logs source with a reporting filter": {
+			changed(t, "  kind: metrics\n", "  kind: logs\n  index_pattern: mock-*\n  time_field: mock_time\n"+
+				"  reporting_filter: job:mock-exporter\n"),
+			"`source`: a `logs` source takes no `reporting_filter`", mockSource + ":10:3",
+		},
+		"reporting filter with a stage": {
+			changed(t, "  kind: metrics\n", "  kind: metrics\n  reporting_filter: job:mock-exporter | count()\n"),
+			"`reporting_filter` is a DQL filter, with no stages or arithmetic", mockSource + ":8:21",
+		},
+		"undeclared variable in a reporting filter": {
+			changed(t, "  kind: metrics\n", "  kind: metrics\n  reporting_filter: job:${mock}\n"),
+			"`reporting_filter` names variable `mock`, which the dashboard does not declare", mockSource + ":8:21",
 		},
 		"undeclared repeat": {
 			changed(t, "  - title: Traffic\n", "  - title: Traffic\n    repeat_for: mock\n"),

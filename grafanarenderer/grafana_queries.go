@@ -12,27 +12,38 @@ import (
 // queryCompiler compiles a document's queries into PromQL, each applying the dashboard's filter.
 type queryCompiler struct {
 	dashboardFilter dqlsyntax.FilterNode
+	dashboardSource *dashboarddsl.Source
 }
 
 func (render *dashboardRender) queryCompiler() queryCompiler {
+	compiler := queryCompiler{dashboardSource: render.dashboard.Source}
 	if render.dashboard.Filter == "" {
-		return queryCompiler{}
+		return compiler
 	}
 	parsed, err := dqlsyntax.ParseQuery(render.dashboard.Filter, dashboarddsl.QueryGrammarVersion())
 	if err != nil {
 		render.refuse("", "filter: "+err.Error())
-		return queryCompiler{}
+		return compiler
 	}
-	return queryCompiler{dashboardFilter: parsed.Expression.Operands[0].Query.Filter}
+	compiler.dashboardFilter = parsed.Expression.Operands[0].Query.Filter
+	return compiler
 }
 
-// promQL is a query in PromQL, under the dashboard's filter.
-func (compiler queryCompiler) promQL(query string) (string, error) {
+// promQL is a query in PromQL, under the dashboard's filter, reading from its own source or else the dashboard's.
+func (compiler queryCompiler) promQL(query string, querySource *dashboarddsl.Source) (string, error) {
 	parsed, err := compiler.filtered(query)
 	if err != nil {
 		return "", err
 	}
-	return promqlbackend.CompileQuery(parsed)
+	source := compiler.dashboardSource
+	if querySource != nil {
+		source = querySource
+	}
+	var config promqlbackend.BackendConfig
+	if source != nil {
+		config.ReportingFilter = source.ReportingFilter
+	}
+	return promqlbackend.CompileQuery(parsed, config)
 }
 
 // seriesSelector is a variable's choices query as the series selector Grafana reads label values from, under the dashboard's filter.
@@ -44,7 +55,7 @@ func (compiler queryCompiler) seriesSelector(query string) (string, error) {
 	if operands := parsed.Expression.Operands; len(operands) != 1 || operands[0].Query == nil || len(operands[0].Query.Stages) > 0 {
 		return "", errors.New("Grafana reads a variable's values from a series selector, so its choices query is a filter, with no stages or arithmetic")
 	}
-	return promqlbackend.CompileQuery(parsed)
+	return promqlbackend.CompileQuery(parsed, promqlbackend.BackendConfig{})
 }
 
 // filtered is a query parsed, its every query operand also applying the dashboard's filter.

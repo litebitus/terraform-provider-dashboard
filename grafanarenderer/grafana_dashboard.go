@@ -185,7 +185,7 @@ func (render *dashboardRender) annotation(position int, annotation dashboarddsl.
 	if annotation.Source != nil && annotation.Source.Kind != dashboarddsl.MetricsSource {
 		render.refuse(at, "Grafana reads no OpenSearch data source")
 	}
-	expression, err := render.queries.promQL(annotation.Query)
+	expression, err := render.queries.promQL(annotation.Query, annotation.Source)
 	if err != nil {
 		render.refuse(at, err.Error())
 	}

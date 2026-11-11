@@ -24,9 +24,10 @@ type Dashboard struct {
 
 // Source is where queries read from.
 type Source struct {
-	Kind         string `yaml:"kind"`
-	IndexPattern string `yaml:"index_pattern"`
-	TimeField    string `yaml:"time_field"`
+	Kind            string `yaml:"kind"`
+	IndexPattern    string `yaml:"index_pattern"`
+	TimeField       string `yaml:"time_field"`
+	ReportingFilter string `yaml:"reporting_filter"`
 }
 
 // Link is a link shown with a dashboard or a panel.

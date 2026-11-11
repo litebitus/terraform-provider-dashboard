@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Dashboard DSL
+  - `schemas/dashboard-dsl-v1.2.schema.json`: a `metrics` source takes a `reporting_filter`; a query ending in an ungrouped `count()` answers `0` while the source reports.
+
 ## v0.1.1 — 2026-11-08
 
 - Dashboard DSL
