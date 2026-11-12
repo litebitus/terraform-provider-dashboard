@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.4 — 2026-11-12
+
 - Dashboard DSL
   - `schemas/dashboard-dsl-v1.4.schema.json`: a `bar` panel takes a `value_order`, and a `table` a `row_order`.
 - Rendering
