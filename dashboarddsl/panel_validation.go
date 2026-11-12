@@ -28,6 +28,7 @@ func (check *documentCheck) panel(at documentPath, panel Panel) {
 		}
 	}
 	check.kindOnly(at, panel.Kind, "orientation", panel.Orientation != "", BarKind)
+	check.kindOnly(at, panel.Kind, "value_order", panel.ValueOrder != "", BarKind)
 	check.kindOnly(at, panel.Kind, "location_field", panel.LocationField != "", MapKind)
 	check.kindOnly(at, panel.Kind, "content", panel.Content != "", TextKind)
 	for position, query := range panel.Queries {
@@ -88,6 +89,7 @@ func (check *documentCheck) textPanel(at documentPath, panel Panel) {
 		{"thresholds", len(panel.Thresholds) > 0},
 		{"unit", panel.Unit != ""},
 		{"value_mappings", len(panel.ValueMappings) > 0},
+		{"value_order", panel.ValueOrder != ""},
 	} {
 		if field.written {
 			check.addAtKey(at.field(field.name),

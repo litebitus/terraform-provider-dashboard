@@ -121,6 +121,7 @@ A call is written as in DQL's stages: the function's name, then its arguments in
 | `axis` | `scale`, `linear` or `log`, and `label`; optional |
 | `stacked` | whether series stack; optional, `false` by default |
 | `orientation` | for `bar`, `vertical` or `horizontal` |
+| `value_order` | for `bar`, the order of its bars by their values, `ascending` or `descending`; optional, the queries' order where left out |
 | `location_field` | for `map`, the field holding each item's location |
 | `content` | the Markdown a `text` panel shows, required for `text` |
 | `links` | links from the panel, each a `title` and a `url`, which may name variables; optional |
@@ -200,7 +201,7 @@ Beyond its shape, a document holds to these:
 - Every `${name}`, in a query, the filter, a `legend_format` or a link's `url`, and every `repeat_for`, names a declared variable.
 - Thresholds rise from the lowest, and `min` is below `max`.
 - The stated widths of a row's panels add up to at most the row, leaving room for any panel without one.
-- `orientation`, `location_field` and `content` stand only on the kind each is for, and a `text` panel holds its content and none of the fields that draw values.
+- `orientation`, `value_order`, `location_field` and `content` stand only on the kind each is for, and a `text` panel holds its content and none of the fields that draw values.
 - A query's `value_column_header` and `value_format` stand only on a `table`, and a `value_format` is a layout the format function reads, holding one verb.
 
 ## Queries

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Dashboard DSL
+  - `schemas/dashboard-dsl-v1.4.schema.json`: a `bar` panel takes a `value_order`, `ascending` or `descending`.
+- Rendering
+  - A `bar` panel with a `value_order` draws its bars sorted by their values.
+
 ## v0.1.3 — 2026-11-12
 
 - Dashboard DSL

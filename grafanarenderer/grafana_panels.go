@@ -177,7 +177,34 @@ func (render *dashboardRender) panel(at string, id int, panel dashboarddsl.Panel
 		queries.Transformations = tableTransformations(panel.Queries)
 		spec.VizConfig.Spec.FieldConfig.Overrides = render.valueFormatOverrides(at, panel.Queries)
 	}
+	if panel.ValueOrder != "" {
+		queries.Transformations = valueOrderTransformations(panel)
+	}
 	return element{Kind: "Panel", Spec: spec}
+}
+
+// valueOrderTransformations reduce a bar panel's series to a row each, its name beside its calculated value, and sort
+// the rows by that value, the order the bars are drawn in.
+func valueOrderTransformations(panel dashboarddsl.Panel) []any {
+	reduced := map[string]any{"mode": "seriesToRows", "reducers": []string{panel.Calculation}, "includeTimeField": false}
+	sortedBy := map[string]any{
+		"field": calculationColumns[panel.Calculation],
+		"desc":  panel.ValueOrder == dashboarddsl.DescendingOrder,
+	}
+	return []any{
+		grafanaTransformation("reduce", reduced),
+		grafanaTransformation("sortBy", map[string]any{"fields": map[string]any{}, "sort": []any{sortedBy}}),
+	}
+}
+
+// calculationColumns are the columns Grafana's reduce transformation writes each calculation's values in.
+var calculationColumns = map[string]string{
+	"first": "First",
+	"last":  "Last",
+	"max":   "Max",
+	"mean":  "Mean",
+	"min":   "Min",
+	"sum":   "Total",
 }
 
 // tableTransformations merge a table's queries into one row per value of the fields they share, and show each
@@ -462,6 +489,7 @@ func panelOptions(panel dashboarddsl.Panel, kind grafanaPanelKind) map[string]an
 	case "timeseries":
 		return map[string]any{"legend": legendOptions(panel.Legend), "tooltip": map[string]any{"mode": "multi", "sort": "none"}}
 	case "bargauge":
+		reduced["values"] = panel.ValueOrder != ""
 		return map[string]any{
 			"reduceOptions": reduced, "orientation": panel.Orientation, "displayMode": "basic", "showUnfilled": true,
 		}

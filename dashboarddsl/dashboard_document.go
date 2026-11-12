@@ -78,6 +78,7 @@ type Panel struct {
 	Axis          *Axis                   `yaml:"axis"`
 	Stacked       bool                    `yaml:"stacked"`
 	Orientation   string                  `yaml:"orientation"`
+	ValueOrder    string                  `yaml:"value_order"`
 	LocationField string                  `yaml:"location_field"`
 	Content       string                  `yaml:"content"`
 	Links         []Link                  `yaml:"links"`
@@ -145,6 +146,12 @@ const (
 	TagCloudKind      = "tag_cloud"
 	TextKind          = "text"
 	TimeSeriesKind    = "time_series"
+)
+
+// The orders a bar panel's bars take by their values.
+const (
+	AscendingOrder  = "ascending"
+	DescendingOrder = "descending"
 )
 
 // The source kinds.

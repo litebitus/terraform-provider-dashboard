@@ -81,7 +81,7 @@ func TestAMetricsSourceReadsItsReportingFilter(t *testing.T) {
 }
 
 func TestADocumentStatesItsMajorOrAMinor(t *testing.T) {
-	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`} {
+	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`, `"1.4"`} {
 		if _, err := ParseDashboard(changed(t, `schema_version: "1"`, "schema_version: "+stated)); err != nil {
 			t.Errorf("schema_version %s: %v", stated, err)
 		}
@@ -203,12 +203,12 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"empty document": {"", "the document is empty", "dashboard:{title}:1:1"},
 		"unknown version": {
 			changed(t, `schema_version: "1"`, `schema_version: "2"`),
-			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\" \"1.3\"]",
+			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\" \"1.3\" \"1.4\"]",
 			mockSource + ":1:17",
 		},
 		"unquoted version": {
 			changed(t, `schema_version: "1"`, `schema_version: 1`),
-			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"`, `\"1.2\"` or `\"1.3\"`",
+			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"`, `\"1.2\"`, `\"1.3\"` or `\"1.4\"`",
 			mockSource + ":1:17",
 		},
 		"two target schemas of one kind": {
@@ -254,6 +254,10 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"field for another kind": {
 			changed(t, "unit: per_second", "unit: per_second\n        orientation: vertical"),
 			"`orientation` is for a `bar` panel", mockSource + ":22:9",
+		},
+		"value order for another kind": {
+			changed(t, "unit: per_second", "unit: per_second\n        value_order: ascending"),
+			"`value_order` is for a `bar` panel", mockSource + ":22:9",
 		},
 		"value column header for another kind": {
 			changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_column_header: mock\n"),

@@ -2,6 +2,10 @@
 
 Each version is the format a dashboard document names in its `schema_version`, and the schema file of that name. A version not yet released is headed `## <version> — unreleased`; the release workflow stamps it with the provider release that ships it and the date.
 
+## 1.4 — unreleased
+
+- A `bar` panel takes a `value_order`, its bars in `ascending` or `descending` order of their values.
+
 ## 1.3 — provider v0.1.3, 2026-11-12
 
 - A `table`'s query takes a `value_column_header`, the header of its value column, and a `value_format`, a layout of the YAML DSL standard's format function its value is written by.

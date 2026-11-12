@@ -4,7 +4,7 @@ dsls:
   - id: dashboard
     file_includes: ["**/dashboards/*.yml"]
     file_excludes: []
-    schema_search_paths: ["{config_root}/schemas/dashboard-dsl-v1.3.schema.json"]
+    schema_search_paths: ["{config_root}/schemas/dashboard-dsl-v1.4.schema.json"]
     placeholder:
       pattern: "\\$\\{(?<body>[^}\\n]*)\\}"
       escape_prefix: "$"

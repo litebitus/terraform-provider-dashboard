@@ -81,6 +81,7 @@ rows:
         unit: count
         calculation: sum
         orientation: horizontal
+        value_order: ascending
         queries:
           - query: __name__:mock_requests_total | sum() by job
       - title: Share by job

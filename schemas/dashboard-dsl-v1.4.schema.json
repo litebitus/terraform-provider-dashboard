@@ -1,0 +1,357 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/litebitus/terraform-provider-dashboard/schemas/dashboard-dsl-v1.4.schema.json",
+  "title": "Dashboard DSL",
+  "description": "A dashboard: its rows hold panels, and its panels hold queries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "title", "time_range", "refresh_interval", "timezone", "source", "rows"],
+  "properties": {
+    "schema_version": {
+      "description": "The version of the DSL the document is written in: `1.4`, or `1` for the newest 1.x the reader knows.",
+      "enum": ["1", "1.4"]
+    },
+    "target_schemas": {
+      "description": "The target schemas the dashboard renders for, each its kind then its version, at most one per kind.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z][a-z0-9]*)*-[0-9]+(\\.[0-9]+)?$" }
+    },
+    "id": {
+      "description": "The dashboard's identity in the UI it renders for, unique there; left out, the UI assigns one where it can.",
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "description": "The dashboard's title.",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "description": "What the dashboard is for.",
+      "type": "string"
+    },
+    "tags": {
+      "description": "The dashboard's tags.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "time_range": {
+      "description": "How far back the dashboard opens.",
+      "$ref": "#/$defs/duration"
+    },
+    "refresh_interval": {
+      "description": "How often the dashboard queries again.",
+      "$ref": "#/$defs/duration"
+    },
+    "timezone": {
+      "description": "The zone times show in.",
+      "enum": ["browser", "utc"]
+    },
+    "source": {
+      "description": "Where the dashboard's queries read from.",
+      "$ref": "#/$defs/source"
+    },
+    "filter": {
+      "description": "A DQL filter every query also applies.",
+      "type": "string",
+      "minLength": 1
+    },
+    "links": {
+      "description": "Links shown with the dashboard.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/link" }
+    },
+    "annotations": {
+      "description": "Marks on the time axis.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/annotation" }
+    },
+    "variables": {
+      "description": "Variable name to the variable; the dashboard shows its variables in name order.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "additionalProperties": { "$ref": "#/$defs/variable" }
+    },
+    "rows": {
+      "description": "The rows, top to bottom.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/row" }
+    }
+  },
+  "$defs": {
+    "duration": {
+      "description": "A duration, such as `30s`, `5m` or `6h`.",
+      "type": "string",
+      "pattern": "^([0-9]+(ms|s|m|h|d|w|y))+$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "description": "The kind of data the queries read.",
+          "enum": ["logs", "metrics"]
+        },
+        "index_pattern": {
+          "description": "For a logs source, the indices the queries read.",
+          "type": "string",
+          "minLength": 1
+        },
+        "time_field": {
+          "description": "For a logs source, the field the time range filters on.",
+          "type": "string",
+          "minLength": 1
+        },
+        "reporting_filter": {
+          "description": "For a metrics source, a DQL filter selecting the series the source emits while it reports.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "if": { "properties": { "kind": { "const": "logs" } } },
+      "then": { "required": ["index_pattern", "time_field"] }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "url"],
+      "properties": {
+        "title": { "description": "The link's text.", "type": "string", "minLength": 1 },
+        "url": { "description": "Where the link goes; it may name variables.", "type": "string", "minLength": 1 }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "query"],
+      "properties": {
+        "title": { "description": "The annotation's title.", "type": "string", "minLength": 1 },
+        "query": { "description": "The DQL query whose items mark the time axis.", "type": "string", "minLength": 1 },
+        "source": {
+          "description": "Where the query reads from, when it is not the dashboard's source.",
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["choices"],
+      "properties": {
+        "choices": {
+          "description": "Where the variable's choices come from: a call to a choice function.",
+          "type": "string",
+          "minLength": 1
+        },
+        "default": { "description": "The value the dashboard opens with.", "type": "string" },
+        "multiple": { "description": "Whether several values can be chosen at once; `false` by default.", "type": "boolean" },
+        "include_all": { "description": "Whether an \"all\" choice matches every value; `false` by default.", "type": "boolean" }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "panels"],
+      "properties": {
+        "title": { "description": "The row's title.", "type": "string", "minLength": 1 },
+        "collapsed": { "description": "Whether the row opens collapsed; `false` by default.", "type": "boolean" },
+        "repeat_for": { "description": "A variable; the row repeats once per chosen value.", "type": "string", "minLength": 1 },
+        "panels": {
+          "description": "The row's panels, left to right.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/panel" }
+        }
+      }
+    },
+    "panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "kind", "height"],
+      "properties": {
+        "title": { "description": "The panel's title.", "type": "string", "minLength": 1 },
+        "description": { "description": "What the panel shows.", "type": "string" },
+        "kind": {
+          "description": "What the panel draws.",
+          "enum": [
+            "area", "bar", "gauge", "heatmap", "histogram", "map", "pie", "records", "stat",
+            "state_timeline", "status_history", "table", "tag_cloud", "text", "time_series"
+          ]
+        },
+        "width": {
+          "description": "The panel's share of the row, in percent; the panels without one share what the rest leave equally.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "height": { "description": "The panel's height in pixels.", "type": "integer", "minimum": 1 },
+        "repeat_for": { "description": "A variable; the panel repeats once per chosen value.", "type": "string", "minLength": 1 },
+        "unit": {
+          "description": "The unit of the values.",
+          "enum": ["bytes", "count", "percent", "per_second", "seconds"]
+        },
+        "decimals": { "description": "How many decimals a value shows.", "type": "integer", "minimum": 0 },
+        "min": { "description": "The least value the panel draws against.", "type": "number" },
+        "max": { "description": "The greatest value the panel draws against.", "type": "number" },
+        "calculation": {
+          "description": "The one value of each series the panel shows.",
+          "enum": ["first", "last", "max", "mean", "min", "sum"]
+        },
+        "thresholds": {
+          "description": "The colors a value takes, from the lowest up.",
+          "type": "array",
+          "prefixItems": [{ "$ref": "#/$defs/threshold" }],
+          "items": { "$ref": "#/$defs/threshold", "required": ["value"] }
+        },
+        "value_mappings": {
+          "description": "Value to what is shown in its place.",
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "$ref": "#/$defs/value_mapping" },
+              {
+                "description": "The text shown in the value's place; write it as a mapping's `text`.",
+                "type": "string",
+                "deprecated": true
+              }
+            ]
+          }
+        },
+        "legend": { "description": "Whether the panel shows its legend, and where.", "$ref": "#/$defs/legend" },
+        "axis": { "description": "The scale values are drawn on, and its label.", "$ref": "#/$defs/axis" },
+        "stacked": { "description": "Whether series stack; `false` by default.", "type": "boolean" },
+        "orientation": { "description": "For a bar panel, which way the bars run.", "enum": ["horizontal", "vertical"] },
+        "value_order": {
+          "description": "For a bar panel, the order of its bars by their values; the queries' order where left out.",
+          "enum": ["ascending", "descending"]
+        },
+        "location_field": {
+          "description": "For a map panel, the field holding each item's location.",
+          "type": "string",
+          "minLength": 1
+        },
+        "content": { "description": "The Markdown a text panel shows.", "type": "string", "minLength": 1 },
+        "links": {
+          "description": "Links from the panel.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/link" }
+        },
+        "queries": {
+          "description": "The panel's queries.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/query" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "text" } } },
+          "then": { "required": ["content"] },
+          "else": { "required": ["unit", "queries"], "properties": { "queries": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "kind": { "enum": ["bar", "gauge", "pie", "stat"] } } },
+          "then": { "required": ["calculation"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "gauge" } } },
+          "then": { "required": ["min", "max"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "bar" } } },
+          "then": { "required": ["orientation"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "map" } } },
+          "then": { "required": ["location_field"] }
+        },
+        {
+          "if": { "required": ["thresholds"] },
+          "then": {
+            "properties": {
+              "value_mappings": {
+                "additionalProperties": {
+                  "not": {
+                    "description": "In a panel with `thresholds`, a value mapping takes no `color`: the thresholds color the panel's values.",
+                    "type": "object",
+                    "required": ["color"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": {
+        "value": {
+          "description": "The value the color starts at; required on every threshold but the first, whose color without one starts from the lowest.",
+          "type": "number"
+        },
+        "color": { "description": "The color.", "$ref": "#/$defs/color" }
+      }
+    },
+    "value_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "description": "The text shown in the value's place.", "type": "string", "minLength": 1 },
+        "color": { "description": "The color the value is shown in, and named by in a legend.", "$ref": "#/$defs/color" }
+      }
+    },
+    "color": {
+      "enum": ["blue", "green", "grey", "orange", "purple", "red", "yellow"]
+    },
+    "legend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["show"],
+      "properties": {
+        "show": { "description": "Whether the legend shows.", "type": "boolean" },
+        "position": { "description": "Where a shown legend stands.", "enum": ["bottom", "right"] }
+      },
+      "if": { "properties": { "show": { "const": true } } },
+      "then": { "required": ["position"] }
+    },
+    "axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scale"],
+      "properties": {
+        "scale": { "description": "How values are spaced on the axis.", "enum": ["linear", "log"] },
+        "label": { "description": "The axis's label.", "type": "string" }
+      }
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["query"],
+      "properties": {
+        "query": { "description": "The query, in DQL.", "type": "string", "minLength": 1 },
+        "source": {
+          "description": "Where the query reads from, when it is not the dashboard's source.",
+          "$ref": "#/$defs/source"
+        },
+        "legend_format": { "description": "How a series is named, by its labels, such as `{{job}}`.", "type": "string" },
+        "min_interval": { "description": "The shortest step a time series is drawn at.", "$ref": "#/$defs/duration" },
+        "value_column_header": {
+          "description": "For a `table`, the header of the column the query's values fill.",
+          "type": "string",
+          "minLength": 1
+        },
+        "value_format": {
+          "description": "For a `table`, the layout the query's value is written by, in the YAML DSL standard's format function, such as `%{%Y-%02m-%02d}C`.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

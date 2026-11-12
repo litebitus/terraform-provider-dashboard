@@ -822,7 +822,36 @@
                   }
                 }
               ],
-              "transformations": [],
+              "transformations": [
+                {
+                  "group": "reduce",
+                  "kind": "Transformation",
+                  "spec": {
+                    "options": {
+                      "includeTimeField": false,
+                      "mode": "seriesToRows",
+                      "reducers": [
+                        "sum"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "group": "sortBy",
+                  "kind": "Transformation",
+                  "spec": {
+                    "options": {
+                      "fields": {},
+                      "sort": [
+                        {
+                          "desc": false,
+                          "field": "Total"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
               "queryOptions": {}
             }
           },
@@ -839,7 +868,7 @@
                     "sum"
                   ],
                   "fields": "",
-                  "values": false
+                  "values": true
                 },
                 "showUnfilled": true
               },

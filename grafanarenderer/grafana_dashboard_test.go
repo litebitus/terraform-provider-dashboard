@@ -293,6 +293,27 @@ func TestAValueFormatScalesItsQueryToMilliseconds(t *testing.T) {
 	}
 }
 
+// A bar panel's value_order sorts the column its calculation is written in, descending where stated.
+func TestABarPanelsValueOrderSortsItsCalculationColumn(t *testing.T) {
+	for _, testCase := range []struct {
+		calculation, valueOrder, column string
+		descending                      bool
+	}{
+		{"last", dashboarddsl.AscendingOrder, "Last", false},
+		{"sum", dashboarddsl.DescendingOrder, "Total", true},
+	} {
+		transformations := valueOrderTransformations(dashboarddsl.Panel{
+			Calculation: testCase.calculation, ValueOrder: testCase.valueOrder,
+		})
+		sortOptions := transformations[1].(map[string]any)["spec"].(map[string]any)["options"].(map[string]any)
+		sortedBy := sortOptions["sort"].([]any)[0].(map[string]any)
+		if sortedBy["field"] != testCase.column || sortedBy["desc"] != testCase.descending {
+			t.Errorf("%s %s: sorted by %v, want %s descending %v",
+				testCase.calculation, testCase.valueOrder, sortedBy, testCase.column, testCase.descending)
+		}
+	}
+}
+
 // A value mapping renders its text, and its color where one is stated, which is what puts it in Grafana's legend.
 func TestAValueMappingRendersItsTextAndColor(t *testing.T) {
 	defaults := fieldDefaults(dashboarddsl.Panel{ValueMappings: map[string]dashboarddsl.ValueMapping{
