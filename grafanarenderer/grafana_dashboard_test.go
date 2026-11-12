@@ -234,11 +234,26 @@ func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 				"Grafana writes a `value_format` only with `%C`, as a date",
 		},
 		"value format with a padded date": {
-			mockQueryOfAPanel, mockTableQuery(`"%12C"`),
+			mockQueryOfAPanel, mockTableQuery(`"%12{%Y}C"`),
 			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: Grafana writes `%C` with no width",
 		},
+		"value format with a time offset": {
+			mockQueryOfAPanel, mockTableQuery(`"%{%Y|+08:00}C"`),
+			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: " +
+				"Grafana writes `%C` in the dashboard's time zone, with no time offset",
+		},
+		"value format with a date verb Grafana does not write": {
+			mockQueryOfAPanel, mockTableQuery(`"%{%Y %3m}C"`),
+			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: " +
+				"Grafana's date format writes no `%3m`",
+		},
+		"value format writing the offset": {
+			mockQueryOfAPanel, mockTableQuery(`"%{%02H:%02M %z}C"`),
+			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: " +
+				"Grafana's date format writes no `%z`",
+		},
 		"value format whose text holds a closing bracket": {
-			mockQueryOfAPanel, mockTableQuery(`"[%C]"`),
+			mockQueryOfAPanel, mockTableQuery(`"%{[%Y]}C"`),
 			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: " +
 				"Grafana's date format holds no `]` in its text",
 		},
@@ -250,6 +265,30 @@ func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 		var refusal Refusal
 		if !errors.As(err, &refusal) || !strings.Contains(err.Error(), testCase.says) {
 			t.Errorf("%s: err = %v, want a refusal saying %q", name, err, testCase.says)
+		}
+	}
+}
+
+// A value_format's date verbs render as their Moment.js tokens, unpadded and zero-padded alike.
+func TestADateFormatRendersItsMomentTokens(t *testing.T) {
+	render := &dashboardRender{}
+	unit := render.dateUnit("mock", "at %{%Y-%m-%02d %H:%02M:%S.%03L %02y}C")
+	want := "time:[at ]YYYY[-]M[-]DD[ ]H[:]mm[:]s[.]SSS[ ]YY"
+	if unit != want || len(render.refusals) > 0 {
+		t.Errorf("unit = %q, refusals = %v, want %q", unit, render.refusals, want)
+	}
+}
+
+// A value_format's query is scaled from the digits of a second its `%C` precision states to milliseconds.
+func TestAValueFormatScalesItsQueryToMilliseconds(t *testing.T) {
+	for valueFormat, want := range map[string]string{
+		"%{%Y}C":   "(mock_up) * 1000",
+		"%{%Y}.1C": "(mock_up) * 100",
+		"%{%Y}.3C": "mock_up",
+		"%{%Y}.9C": "(mock_up) / 1000000",
+	} {
+		if got := millisecondsExpression("mock_up", valueFormat); got != want {
+			t.Errorf("%s: expression = %q, want %q", valueFormat, got, want)
 		}
 	}
 }

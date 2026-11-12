@@ -144,7 +144,7 @@ A panel colors its values from one source:
 | `legend_format` | how a series is named, by its labels; optional |
 | `min_interval` | the shortest step a time series is drawn at, a duration; optional |
 | `value_column_header` | for `table`, the header of the column the query's values fill; optional |
-| `value_format` | for `table`, the layout the query's value is written by, in the [YAML DSL standard's format function](https://github.com/litebitus/yaml-dsl-spec/blob/main/docs/spec.md), its one verb taking the value, such as `%C` for a time's date; optional |
+| `value_format` | for `table`, the layout the query's value is written by, in the [YAML DSL standard's format function](https://github.com/litebitus/yaml-dsl-spec/blob/main/docs/spec.md), its one verb taking the value, such as `%{%Y-%02m-%02d %02H:%02M:%02S}C` for a time's date and time; optional |
 
 ### Kinds
 
@@ -221,7 +221,9 @@ Grafana's target schemas are of kind `grafana-v2`, Grafana's V2 Resource dashboa
 | an `id` other than lowercase letters, digits and hyphens, beginning and ending with a letter or digit, at most 40 | Grafana takes no other name |
 | a panel field the kind's Grafana panel does not draw, such as `stacked` on a `stat` | the panel would draw less than the document says |
 | a variable's choices query with stages or arithmetic | Grafana reads a variable's values from a series selector |
-| a `value_format` with a verb other than `%C`, or a `%C` with a width | Grafana writes a value as text only through its date unit, which writes a date |
+| a `value_format` with a verb other than `%C`, or a `%C` with a width | Grafana writes a value as text only through its date unit, which writes a time |
+| a `%C` date format with a time offset | Grafana writes a time in the dashboard's time zone |
+| a date verb no Moment.js token writes alike, such as `%y`, `%3m` or `%z` | Grafana's date unit writes a date by Moment.js tokens |
 | a `value_format` whose text holds `]` | Grafana's date format writes text between brackets |
 
 ### OpenSearch Dashboards

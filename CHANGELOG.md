@@ -7,7 +7,7 @@
   - `schemas/dashboard-dsl-v1.3.schema.json`: a `table`'s query takes a `value_column_header` and a `value_format`, a layout of the YAML DSL standard's format function.
 - Rendering
   - A `table` shows several queries' values side by side, one row per value of the fields they share, and no evaluation time.
-  - A `value_format` of `%C` writes the value as a date in the dashboard's time zone.
+  - A `value_format` of `%C` writes the value by its date format, in the dashboard's time zone, from the digits of a second its precision states.
 
 ## v0.1.2 — 2026-11-11
 

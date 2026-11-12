@@ -93,4 +93,4 @@ rows:
             value_column_header: builds
           - query: __name__:mock_last_build_timestamp_seconds and env:${env} and job:${job} | max() by job
             value_column_header: last_build
-            value_format: "%C"
+            value_format: "%{%Y-%02m-%02d %02H:%02M:%02S}C"

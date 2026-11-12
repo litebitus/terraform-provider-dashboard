@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	yamldslspec "github.com/litebitus/yaml-dsl-spec/go"
@@ -90,8 +91,8 @@ const baseColor = "text"
 // timeFieldName is the field Grafana's Prometheus frames hold their evaluation time in.
 const timeFieldName = "Time"
 
-// millisecondsPerSecond scales a time in seconds to the milliseconds Grafana's date units read.
-const millisecondsPerSecond = "1000"
+// millisecondDigits are the digits of a second a time in milliseconds counts in, the unit Grafana's date units read.
+const millisecondDigits = 3
 
 // element is a panel among the dashboard's elements, which the layout places by name.
 type element struct {
@@ -229,26 +230,98 @@ func (render *dashboardRender) valueFormatOverrides(at string, queries []dashboa
 	return overrides
 }
 
-// dateUnit is a value_format layout as Grafana's custom date unit: its text kept literal, and `%C` as the date.
+// dateUnit is a value_format layout as Grafana's custom date unit: its text kept literal, and `%C` as its date format.
 func (render *dashboardRender) dateUnit(at, layout string) string {
 	layoutParts, _ := yamldslspec.ParseLayout(layout)
 	var dateFormat strings.Builder
 	for _, layoutPart := range layoutParts {
 		verb := layoutPart.Verb
 		switch {
-		case verb == nil && strings.Contains(layoutPart.Text, "]"):
-			render.refuse(at, "Grafana's date format holds no `]` in its text")
 		case verb == nil:
-			dateFormat.WriteString("[" + layoutPart.Text + "]")
+			dateFormat.WriteString(render.literalDateText(at, layoutPart.Text))
 		case verb.Letter != 'C':
 			render.refuse(at, "Grafana writes a `value_format` only with `%C`, as a date")
 		case verb.LeftAligned || verb.Width != nil:
 			render.refuse(at, "Grafana writes `%C` with no width")
+		case verb.DateFormat.Offset != nil:
+			render.refuse(at, "Grafana writes `%C` in the dashboard's time zone, with no time offset")
 		default:
-			dateFormat.WriteString("YYYY-MM-DD")
+			for _, dateFormatPart := range verb.DateFormat.Parts {
+				if dateFormatPart.DateVerb == 0 {
+					dateFormat.WriteString(render.literalDateText(at, dateFormatPart.Text))
+				} else {
+					dateFormat.WriteString(render.momentToken(at, dateFormatPart))
+				}
+			}
 		}
 	}
 	return "time:" + dateFormat.String()
+}
+
+// momentTokens are the date verbs Grafana's date unit writes, as written, keyed to their Moment.js tokens.
+var momentTokens = map[string]string{
+	"%Y":   "YYYY",
+	"%04Y": "YYYY",
+	"%02y": "YY",
+	"%m":   "M",
+	"%02m": "MM",
+	"%d":   "D",
+	"%02d": "DD",
+	"%H":   "H",
+	"%02H": "HH",
+	"%M":   "m",
+	"%02M": "mm",
+	"%S":   "s",
+	"%02S": "ss",
+	"%03L": "SSS",
+}
+
+// momentToken is a date verb as the Moment.js token Grafana's date unit writes it with.
+func (render *dashboardRender) momentToken(at string, dateVerb yamldslspec.DateFormatPart) string {
+	writtenDateVerb := "%"
+	if dateVerb.LeftAligned {
+		writtenDateVerb += "-"
+	}
+	if dateVerb.ZeroPadded {
+		writtenDateVerb += "0"
+	}
+	if dateVerb.Width != nil {
+		writtenDateVerb += strconv.Itoa(*dateVerb.Width)
+	}
+	writtenDateVerb += string(dateVerb.DateVerb)
+	token, isWritten := momentTokens[writtenDateVerb]
+	if !isWritten {
+		render.refuse(at, "Grafana's date format writes no "+yamldslspec.CodeSpan(writtenDateVerb))
+	}
+	return token
+}
+
+// millisecondsExpression scales a query's value, a time in the digits of a second its `%C` precision states, to the
+// milliseconds Grafana's date units read.
+func millisecondsExpression(expression, valueFormat string) string {
+	layoutParts, _ := yamldslspec.ParseLayout(valueFormat)
+	timeDigits := 0
+	for _, layoutPart := range layoutParts {
+		if layoutPart.Verb != nil && layoutPart.Verb.Precision != nil {
+			timeDigits = *layoutPart.Verb.Precision
+		}
+	}
+	digitsApart := timeDigits - millisecondDigits
+	switch {
+	case digitsApart < 0:
+		return "(" + expression + ") * 1" + strings.Repeat("0", -digitsApart)
+	case digitsApart > 0:
+		return "(" + expression + ") / 1" + strings.Repeat("0", digitsApart)
+	}
+	return expression
+}
+
+// literalDateText is text a date format writes as it is, which Moment.js reads between brackets.
+func (render *dashboardRender) literalDateText(at, text string) string {
+	if strings.Contains(text, "]") {
+		render.refuse(at, "Grafana's date format holds no `]` in its text")
+	}
+	return "[" + text + "]"
 }
 
 // writtenFields are the fields a panel states that only some of Grafana's panels draw.
@@ -285,7 +358,7 @@ func (render *dashboardRender) panelQueries(at string, queries []dashboarddsl.Qu
 			render.refuse(queryAt, err.Error())
 		}
 		if query.ValueFormat != "" {
-			expression = "(" + expression + ") * " + millisecondsPerSecond
+			expression = millisecondsExpression(expression, query.ValueFormat)
 		}
 		querySpec := map[string]any{
 			"expr":    expression,

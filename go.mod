@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
 	github.com/litebitus/dql-compiler v0.1.2
-	github.com/litebitus/yaml-dsl-spec/go v0.3.2
+	github.com/litebitus/yaml-dsl-spec/go v0.3.3
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/text v0.43.0

@@ -260,7 +260,7 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 			"`value_column_header` is for a `table` panel", mockSource + ":25:13",
 		},
 		"value format for another kind": {
-			changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%C\"\n"),
+			changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%{%Y}C\"\n"),
 			"`value_format` is for a `table` panel", mockSource + ":25:13",
 		},
 		"value format the format function does not read": {
@@ -271,7 +271,7 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		},
 		"value format with a verb per value but one value": {
 			strings.Replace(
-				changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%C %C\"\n"),
+				changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%{%Y}C %{%m}C\"\n"),
 				"kind: time_series", "kind: table", 1),
 			"`value_format` holds one verb, for the query's value, not 2", mockSource + ":25:27",
 		},

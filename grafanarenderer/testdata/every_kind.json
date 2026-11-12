@@ -550,7 +550,7 @@
                     "properties": [
                       {
                         "id": "unit",
-                        "value": "time:[built ]YYYY-MM-DD"
+                        "value": "time:[built ]YYYY[-]MM[-]DD[ ]HH[:]mm"
                       }
                     ]
                   }

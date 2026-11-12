@@ -343,7 +343,7 @@
           "minLength": 1
         },
         "value_format": {
-          "description": "For a `table`, the layout the query's value is written by, in the YAML DSL standard's format function, such as `%C`.",
+          "description": "For a `table`, the layout the query's value is written by, in the YAML DSL standard's format function, such as `%{%Y-%02m-%02d}C`.",
           "type": "string",
           "minLength": 1
         }
