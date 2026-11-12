@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.3 — 2026-11-12
+
 - Dashboard DSL
   - Arithmetic in a metrics query with a side grouping by more fields pairs each of its series with the other side's one, and the result keeps its fields.
   - `schemas/dashboard-dsl-v1.3.schema.json`: a `table`'s query takes a `value_column_header` and a `value_format`, a layout of the YAML DSL standard's format function.
