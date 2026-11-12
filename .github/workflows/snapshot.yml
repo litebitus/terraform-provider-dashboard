@@ -76,3 +76,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GPG_FINGERPRINT: ${{ steps.signing_key.outputs.fingerprint }}
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          echo "Published \`terraform-provider-dashboard\` \`${VERSION#v}\` to GitHub from commit \`${GITHUB_SHA::7}\`." >> "$GITHUB_STEP_SUMMARY"

@@ -121,6 +121,15 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GPG_FINGERPRINT: ${{ steps.signing_key.outputs.fingerprint }}
 
+      - name: Summary
+        if: ${{ !inputs.dry_run }}
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          set -euo pipefail
+          commit="$(git rev-parse --short=7 HEAD)"
+          echo "Published \`terraform-provider-dashboard\` \`${NEXT#v}\` to GitHub from commit \`${commit}\`." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Dry run summary
         if: ${{ inputs.dry_run }}
         run: echo "DRY RUN - would release ${{ steps.version.outputs.next }}"
