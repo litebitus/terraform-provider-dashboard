@@ -83,14 +83,30 @@ rows:
   - title: Builds
     panels:
       - title: Builds by job
-        description: Two queries side by side, one row per job, the second written as a date.
+        description: Two queries side by side, one row per job, the second written as a date, the latest build first.
         kind: table
         height: 200
         unit: count
         decimals: 0
+        row_order:
+          - column: last_build
+            order: descending
+          - column: job
+            order: ascending
         queries:
           - query: __name__:mock_builds_total and env:${env} and job:${job} | max() by job
             value_column_header: builds
           - query: __name__:mock_last_build_timestamp_seconds and env:${env} and job:${job} | max() by job
             value_column_header: last_build
             value_format: "%{%Y-%02m-%02d %02H:%02M:%02S}C"
+      - title: Most builds
+        description: Each job's builds as a bar, sorted by value, the most first.
+        kind: bar
+        height: 200
+        unit: count
+        calculation: last
+        orientation: horizontal
+        value_order: descending
+        queries:
+          - query: __name__:mock_builds_total and env:${env} and job:${job} | max() by job
+            legend_format: "{{job}}"

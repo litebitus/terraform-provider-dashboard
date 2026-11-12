@@ -197,6 +197,18 @@ func valueOrderTransformations(panel dashboarddsl.Panel) []any {
 	}
 }
 
+// tableSortBy is a table's row_order as the sort Grafana's table opens with, its first column the primary.
+func tableSortBy(rowOrder []dashboarddsl.RowOrderColumn) []any {
+	sortBy := make([]any, 0, len(rowOrder))
+	for _, rowOrderColumn := range rowOrder {
+		sortBy = append(sortBy, map[string]any{
+			"displayName": rowOrderColumn.Column,
+			"desc":        rowOrderColumn.Order == dashboarddsl.DescendingOrder,
+		})
+	}
+	return sortBy
+}
+
 // calculationColumns are the columns Grafana's reduce transformation writes each calculation's values in.
 var calculationColumns = map[string]string{
 	"first": "First",
@@ -520,7 +532,11 @@ func panelOptions(panel dashboarddsl.Panel, kind grafanaPanelKind) map[string]an
 			}},
 		}
 	case "table":
-		return map[string]any{"showHeader": true}
+		options := map[string]any{"showHeader": true}
+		if len(panel.RowOrder) > 0 {
+			options["sortBy"] = tableSortBy(panel.RowOrder)
+		}
+		return options
 	case "state-timeline":
 		return map[string]any{"legend": legendOptions(panel.Legend), "mergeValues": true, "showValue": "auto"}
 	case "status-history":

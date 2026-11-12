@@ -5,6 +5,7 @@ Each version is the format a dashboard document names in its `schema_version`, a
 ## 1.4 — unreleased
 
 - A `bar` panel takes a `value_order`, its bars in `ascending` or `descending` order of their values.
+- A `table` takes a `row_order`, the columns its rows open sorted by, each `ascending` or `descending`.
 
 ## 1.3 — provider v0.1.3, 2026-11-12
 

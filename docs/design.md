@@ -108,6 +108,7 @@ A render is a V2 Resource dashboard of the target schema's `api_version`. Its `m
 - A panel that states no legend shows one, as a list at the bottom.
 - A `table` hides Grafana's evaluation time with an `organize` transformation, which also heads each query's value column with its `value_column_header`. A query's value column is Grafana's `Value`, or `Value #` and its refId where the panel has several queries.
 - A `table` with several queries merges them first with a `merge` transformation, which pairs rows on the fields every query's frame holds.
+- A `table`'s `row_order` is the table panel's `sortBy`, its entries in order, each a column's display name and whether it sorts descending; the table opens sorted by it.
 - A `bar` panel with a `value_order` reduces each series to a row by its `calculation` with a `reduce` transformation, its name in the row's text column, and sorts the rows by the calculation's column with a `sortBy` transformation. The bar gauge then draws each row as a bar, named by its text column, in the rows' order.
 - A `value_format` is the unit of its query's value column, Grafana's custom date unit `time:`: its text in brackets, and each of `%C`'s date verbs as the Moment.js token that writes it alike, unpadded or zero-padded. `%Y` is `YYYY`, which pads a year below 1000 to four digits.
 - A `value_format`'s query is scaled from the digits of a second `%C`'s precision states to milliseconds, the unit Grafana's date unit reads. Grafana writes the time in the dashboard's `timezone`.

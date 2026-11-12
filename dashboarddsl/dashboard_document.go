@@ -79,10 +79,17 @@ type Panel struct {
 	Stacked       bool                    `yaml:"stacked"`
 	Orientation   string                  `yaml:"orientation"`
 	ValueOrder    string                  `yaml:"value_order"`
+	RowOrder      []RowOrderColumn        `yaml:"row_order"`
 	LocationField string                  `yaml:"location_field"`
 	Content       string                  `yaml:"content"`
 	Links         []Link                  `yaml:"links"`
 	Queries       []Query                 `yaml:"queries"`
+}
+
+// RowOrderColumn is a column a table's rows are sorted by, and its order.
+type RowOrderColumn struct {
+	Column string `yaml:"column"`
+	Order  string `yaml:"order"`
 }
 
 // Threshold is the color a value takes from Value up, or from the lowest where Value is left out.
@@ -148,7 +155,7 @@ const (
 	TimeSeriesKind    = "time_series"
 )
 
-// The orders a bar panel's bars take by their values.
+// The orders a bar panel's bars and a table's columns take.
 const (
 	AscendingOrder  = "ascending"
 	DescendingOrder = "descending"

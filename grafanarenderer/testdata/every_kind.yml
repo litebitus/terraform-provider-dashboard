@@ -159,6 +159,11 @@ rows:
         kind: table
         height: 200
         unit: count
+        row_order:
+          - column: builds
+            order: descending
+          - column: job
+            order: ascending
         queries:
           - query: __name__:mock_builds_total | max() by job
             value_column_header: builds

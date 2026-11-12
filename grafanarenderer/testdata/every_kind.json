@@ -524,7 +524,17 @@
             "version": "13.3.0",
             "spec": {
               "options": {
-                "showHeader": true
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "builds"
+                  },
+                  {
+                    "desc": false,
+                    "displayName": "job"
+                  }
+                ]
               },
               "fieldConfig": {
                 "defaults": {

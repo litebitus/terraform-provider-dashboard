@@ -228,6 +228,24 @@
           "description": "For a bar panel, the order of its bars by their values; the queries' order where left out.",
           "enum": ["ascending", "descending"]
         },
+        "row_order": {
+          "description": "For a table, the order its rows open in, the first column the primary sort.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["column", "order"],
+            "properties": {
+              "column": {
+                "description": "A column's header: a query's `value_column_header`, or a field a query groups by.",
+                "type": "string",
+                "minLength": 1
+              },
+              "order": { "description": "The column's order.", "enum": ["ascending", "descending"] }
+            }
+          }
+        },
         "location_field": {
           "description": "For a map panel, the field holding each item's location.",
           "type": "string",

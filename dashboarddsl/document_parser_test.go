@@ -279,6 +279,24 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 				"kind: time_series", "kind: table", 1),
 			"`value_format` holds one verb, for the query's value, not 2", mockSource + ":25:27",
 		},
+		"row order for another kind": {
+			changed(t, "unit: per_second", "unit: per_second\n        row_order:\n          - column: job\n            order: ascending"),
+			"`row_order` is for a `table` panel", mockSource + ":22:9",
+		},
+		"row order of a column the table does not show": {
+			strings.Replace(
+				changed(t, "unit: per_second", "unit: per_second\n        row_order:\n          - column: mock\n            order: ascending"),
+				"kind: time_series", "kind: table", 1),
+			"column `mock` is not one the table shows: a query's `value_column_header`, or a field a query groups by",
+			mockSource + ":23:21",
+		},
+		"row order of a column twice": {
+			strings.Replace(
+				changed(t, "unit: per_second", "unit: per_second\n        row_order:\n          - column: job\n            order: ascending"+
+					"\n          - column: job\n            order: descending"),
+				"kind: time_series", "kind: table", 1),
+			"column `job` is ordered by an earlier entry", mockSource + ":25:21",
+		},
 		"metrics source with an index pattern": {
 			changed(t, "  kind: metrics\n", "  kind: metrics\n  index_pattern: mock-*\n"),
 			"`source`: a `metrics` source takes no `index_pattern` or `time_field`", mockSource + ":8:3",
