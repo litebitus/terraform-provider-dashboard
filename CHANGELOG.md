@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Dashboard DSL
+  - Arithmetic in a metrics query with a side grouping by more fields pairs each of its series with the other side's one, and the result keeps its fields.
+
 ## v0.1.2 — 2026-11-11
 
 - Dashboard DSL
