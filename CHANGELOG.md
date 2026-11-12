@@ -4,6 +4,10 @@
 
 - Dashboard DSL
   - Arithmetic in a metrics query with a side grouping by more fields pairs each of its series with the other side's one, and the result keeps its fields.
+  - `schemas/dashboard-dsl-v1.3.schema.json`: a `table`'s query takes a `value_column_header` and a `value_format`, a layout of the YAML DSL standard's format function.
+- Rendering
+  - A `table` shows several queries' values side by side, one row per value of the fields they share, and no evaluation time.
+  - A `value_format` of `%C` writes the value as a date in the dashboard's time zone.
 
 ## v0.1.2 — 2026-11-11
 

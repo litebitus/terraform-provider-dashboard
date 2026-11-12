@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.2.schema.json
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.3.schema.json
 schema_version: "1"
 target_schemas: [grafana-v2-13]
 id: mock-service
@@ -79,3 +79,18 @@ rows:
             color: red
         queries:
           - query: __name__:mock_errors_total and env:${env} and job:${job} | rate(5m) | sum()
+
+  - title: Builds
+    panels:
+      - title: Builds by job
+        description: Two queries side by side, one row per job, the second written as a date.
+        kind: table
+        height: 200
+        unit: count
+        decimals: 0
+        queries:
+          - query: __name__:mock_builds_total and env:${env} and job:${job} | max() by job
+            value_column_header: builds
+          - query: __name__:mock_last_build_timestamp_seconds and env:${env} and job:${job} | max() by job
+            value_column_header: last_build
+            value_format: "%C"

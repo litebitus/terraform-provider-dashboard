@@ -81,7 +81,7 @@ func TestAMetricsSourceReadsItsReportingFilter(t *testing.T) {
 }
 
 func TestADocumentStatesItsMajorOrAMinor(t *testing.T) {
-	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`} {
+	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`} {
 		if _, err := ParseDashboard(changed(t, `schema_version: "1"`, "schema_version: "+stated)); err != nil {
 			t.Errorf("schema_version %s: %v", stated, err)
 		}
@@ -203,12 +203,12 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"empty document": {"", "the document is empty", "dashboard:{title}:1:1"},
 		"unknown version": {
 			changed(t, `schema_version: "1"`, `schema_version: "2"`),
-			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\"]",
+			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\" \"1.3\"]",
 			mockSource + ":1:17",
 		},
 		"unquoted version": {
 			changed(t, `schema_version: "1"`, `schema_version: 1`),
-			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"` or `\"1.2\"`",
+			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"`, `\"1.2\"` or `\"1.3\"`",
 			mockSource + ":1:17",
 		},
 		"two target schemas of one kind": {
@@ -224,7 +224,7 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		},
 		"unknown field": {
 			changed(t, "        height: 300\n", "        height: 300\n        colour: red\n"),
-			"`colour` is not a field of `panels[0]`", mockSource + ":21:9",
+			"`colour` is not defined in the schema", mockSource + ":21:9",
 		},
 		"missing field": {changed(t, "timezone: utc\n", ""), "`timezone` is required", mockSource + ":1:1"},
 		"value outside its set": {
@@ -254,6 +254,26 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"field for another kind": {
 			changed(t, "unit: per_second", "unit: per_second\n        orientation: vertical"),
 			"`orientation` is for a `bar` panel", mockSource + ":22:9",
+		},
+		"value column header for another kind": {
+			changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_column_header: mock\n"),
+			"`value_column_header` is for a `table` panel", mockSource + ":25:13",
+		},
+		"value format for another kind": {
+			changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%C\"\n"),
+			"`value_format` is for a `table` panel", mockSource + ":25:13",
+		},
+		"value format the format function does not read": {
+			strings.Replace(
+				changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%k\"\n"),
+				"kind: time_series", "kind: table", 1),
+			"`value_format`: `%k` is not a verb `format` writes", mockSource + ":25:27",
+		},
+		"value format with a verb per value but one value": {
+			strings.Replace(
+				changed(t, "legend_format: \"{{job}}\"\n", "legend_format: \"{{job}}\"\n            value_format: \"%C %C\"\n"),
+				"kind: time_series", "kind: table", 1),
+			"`value_format` holds one verb, for the query's value, not 2", mockSource + ":25:27",
 		},
 		"metrics source with an index pattern": {
 			changed(t, "  kind: metrics\n", "  kind: metrics\n  index_pattern: mock-*\n"),

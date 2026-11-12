@@ -152,3 +152,15 @@ rows:
         kind: text
         height: 200
         content: "Mock **notes** for ${env}."
+  - title: Joined
+    panels:
+      - title: Builds
+        kind: table
+        height: 200
+        unit: count
+        queries:
+          - query: __name__:mock_builds_total | max() by job
+            value_column_header: builds
+          - query: __name__:mock_last_build_timestamp_seconds | max() by job
+            value_column_header: last_build
+            value_format: "built %C"

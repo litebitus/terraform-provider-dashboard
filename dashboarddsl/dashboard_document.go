@@ -120,10 +120,12 @@ type Axis struct {
 
 // Query is one query of a panel, in DQL.
 type Query struct {
-	Query        string  `yaml:"query"`
-	Source       *Source `yaml:"source"`
-	LegendFormat string  `yaml:"legend_format"`
-	MinInterval  string  `yaml:"min_interval"`
+	Query             string  `yaml:"query"`
+	Source            *Source `yaml:"source"`
+	LegendFormat      string  `yaml:"legend_format"`
+	MinInterval       string  `yaml:"min_interval"`
+	ValueColumnHeader string  `yaml:"value_column_header"`
+	ValueFormat       string  `yaml:"value_format"`
 }
 
 // The panel kinds.

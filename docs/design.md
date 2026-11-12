@@ -106,6 +106,9 @@ A render is a V2 Resource dashboard of the target schema's `api_version`. Its `m
 | `text` | `text`, Markdown | `content` | — |
 
 - A panel that states no legend shows one, as a list at the bottom.
+- A `table` hides Grafana's evaluation time with an `organize` transformation, which also heads each query's value column with its `value_column_header`. A query's value column is Grafana's `Value`, or `Value #` and its refId where the panel has several queries.
+- A `table` with several queries merges them first with a `merge` transformation, which pairs rows on the fields every query's frame holds.
+- A `value_format` is the unit of its query's value column, Grafana's custom date unit `time:`, its text in brackets and `%C` as `YYYY-MM-DD`; the query's value is multiplied by 1000, the milliseconds the unit reads. Grafana writes the date in the dashboard's `timezone`.
 - A value below the lowest threshold is drawn in the theme's text color; `grey` is `#808080`, every other color Grafana's own of that name.
 
 | `unit` | Grafana unit |

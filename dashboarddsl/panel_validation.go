@@ -35,6 +35,30 @@ func (check *documentCheck) panel(at documentPath, panel Panel) {
 		check.query(queryAt.field("query"), query.Query)
 		check.source(queryAt.field("source"), query.Source)
 		check.references(queryAt.field("legend_format"), "legend_format", query.LegendFormat)
+		check.kindOnly(queryAt, panel.Kind, "value_column_header", query.ValueColumnHeader != "", TableKind)
+		check.kindOnly(queryAt, panel.Kind, "value_format", query.ValueFormat != "", TableKind)
+		check.valueFormat(queryAt.field("value_format"), query.ValueFormat)
+	}
+}
+
+// valueFormat holds a query's value_format to a layout of the format function whose one verb takes the value.
+func (check *documentCheck) valueFormat(at documentPath, layout string) {
+	if layout == "" {
+		return
+	}
+	layoutParts, err := yamldslspec.ParseLayout(layout)
+	if err != nil {
+		check.addAtValue(at, "`value_format`: %v", err)
+		return
+	}
+	verbCount := 0
+	for _, layoutPart := range layoutParts {
+		if layoutPart.Verb != nil {
+			verbCount++
+		}
+	}
+	if verbCount != 1 {
+		check.addAtValue(at, "`value_format` holds one verb, for the query's value, not %d", verbCount)
 	}
 }
 

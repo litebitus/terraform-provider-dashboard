@@ -22,7 +22,7 @@ func TestASchemaProblemIsReportedAsACompilerReportsOne(t *testing.T) {
 		"22 |         unit: per_second\n" +
 		"23 |         queries:\n" +
 		"   |\n" +
-		"   = rule: minimum, at dashboard-dsl-v1.2.schema.json#/$defs/panel/properties/width/minimum\n" +
+		"   = rule: minimum, at dashboard-dsl-v1.3.schema.json#/$defs/panel/properties/width/minimum\n" +
 		"\n" +
 		"1 error"
 	if err == nil || err.Error() != want {
@@ -49,7 +49,7 @@ func TestASchemaFailureIsWordedByTheStandard(t *testing.T) {
 		"missing field at the root": {"timezone: utc\n", "", "`timezone` is required", "1:1"},
 		"unknown field": {
 			"        height: 300\n", "        height: 300\n        mock_field: mock\n",
-			"`mock_field` is not a field of `panels[0]`", "21:9",
+			"`mock_field` is not defined in the schema", "21:9",
 		},
 		"invalid key": {"  job:\n", "  mock-key:\n", "`mock-key` is not a valid key of `variables`", "12:3"},
 		"enum": {

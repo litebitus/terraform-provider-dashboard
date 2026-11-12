@@ -143,6 +143,8 @@ A panel colors its values from one source:
 | `source` | where it reads from, when it is not the dashboard's `source`; optional |
 | `legend_format` | how a series is named, by its labels; optional |
 | `min_interval` | the shortest step a time series is drawn at, a duration; optional |
+| `value_column_header` | for `table`, the header of the column the query's values fill; optional |
+| `value_format` | for `table`, the layout the query's value is written by, in the [YAML DSL standard's format function](https://github.com/litebitus/yaml-dsl-spec/blob/main/docs/spec.md), its one verb taking the value, such as `%C` for a time's date; optional |
 
 ### Kinds
 
@@ -159,7 +161,7 @@ A panel colors its values from one source:
 | `stat` | one value, large |
 | `state_timeline` | each series' state over time as a band |
 | `status_history` | each series' value at each time as a cell |
-| `table` | the series and their values as rows |
+| `table` | the series and their values as rows; several queries' values side by side, a row for each value of the fields they share |
 | `tag_cloud` | each value of a field, sized by its count |
 | `text` | Markdown |
 | `time_series` | each series as a line over time |
@@ -199,6 +201,7 @@ Beyond its shape, a document holds to these:
 - Thresholds rise from the lowest, and `min` is below `max`.
 - The stated widths of a row's panels add up to at most the row, leaving room for any panel without one.
 - `orientation`, `location_field` and `content` stand only on the kind each is for, and a `text` panel holds its content and none of the fields that draw values.
+- A query's `value_column_header` and `value_format` stand only on a `table`, and a `value_format` is a layout the format function reads, holding one verb.
 
 ## Queries
 
@@ -218,6 +221,8 @@ Grafana's target schemas are of kind `grafana-v2`, Grafana's V2 Resource dashboa
 | an `id` other than lowercase letters, digits and hyphens, beginning and ending with a letter or digit, at most 40 | Grafana takes no other name |
 | a panel field the kind's Grafana panel does not draw, such as `stacked` on a `stat` | the panel would draw less than the document says |
 | a variable's choices query with stages or arithmetic | Grafana reads a variable's values from a series selector |
+| a `value_format` with a verb other than `%C`, or a `%C` with a width | Grafana writes a value as text only through its date unit, which writes a date |
+| a `value_format` whose text holds `]` | Grafana's date format writes text between brackets |
 
 ### OpenSearch Dashboards
 

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
+
+	yamldslspec "github.com/litebitus/yaml-dsl-spec/go"
 
 	"github.com/litebitus/terraform-provider-dashboard/dashboarddsl"
 )
@@ -84,6 +87,12 @@ const (
 // baseColor is what a value below the lowest threshold is drawn in where no threshold states it: the theme's text color.
 const baseColor = "text"
 
+// timeFieldName is the field Grafana's Prometheus frames hold their evaluation time in.
+const timeFieldName = "Time"
+
+// millisecondsPerSecond scales a time in seconds to the milliseconds Grafana's date units read.
+const millisecondsPerSecond = "1000"
+
 // element is a panel among the dashboard's elements, which the layout places by name.
 type element struct {
 	Kind string    `json:"kind"`
@@ -163,7 +172,83 @@ func (render *dashboardRender) panel(at string, id int, panel dashboarddsl.Panel
 	queries.Queries = render.panelQueries(at, panel.Queries, kind)
 	spec.VizConfig.Spec.FieldConfig.Defaults = fieldDefaults(panel)
 	spec.VizConfig.Spec.Options = panelOptions(panel, kind)
+	if panel.Kind == dashboarddsl.TableKind {
+		queries.Transformations = tableTransformations(panel.Queries)
+		spec.VizConfig.Spec.FieldConfig.Overrides = render.valueFormatOverrides(at, panel.Queries)
+	}
 	return element{Kind: "Panel", Spec: spec}
+}
+
+// tableTransformations merge a table's queries into one row per value of the fields they share, and show each
+// query's values under its header, with no evaluation time.
+func tableTransformations(queries []dashboarddsl.Query) []any {
+	transformations := []any{}
+	if len(queries) > 1 {
+		transformations = append(transformations, grafanaTransformation("merge", map[string]any{}))
+	}
+	headers := map[string]any{}
+	for position, query := range queries {
+		if query.ValueColumnHeader != "" {
+			headers[valueFieldName(position, len(queries))] = query.ValueColumnHeader
+		}
+	}
+	organized := map[string]any{
+		"excludeByName": map[string]any{timeFieldName: true},
+		"indexByName":   map[string]any{},
+		"renameByName":  headers,
+	}
+	return append(transformations, grafanaTransformation("organize", organized))
+}
+
+func grafanaTransformation(transformationID string, options map[string]any) map[string]any {
+	return map[string]any{"kind": "Transformation", "group": transformationID, "spec": map[string]any{"options": options}}
+}
+
+// valueFieldName is the field a table query's values fill in Grafana's Prometheus frames: `Value` for a panel's one
+// query, else `Value #` and its refId.
+func valueFieldName(position, queryCount int) string {
+	if queryCount == 1 {
+		return "Value"
+	}
+	return "Value #" + referenceID(position)
+}
+
+// valueFormatOverrides write each query's value_format as the unit of the column its values fill.
+func (render *dashboardRender) valueFormatOverrides(at string, queries []dashboarddsl.Query) []any {
+	overrides := []any{}
+	for position, query := range queries {
+		if query.ValueFormat == "" {
+			continue
+		}
+		queryAt := fmt.Sprintf("%s, query %d", at, position+1)
+		overrides = append(overrides, map[string]any{
+			"matcher":    map[string]any{"id": "byName", "options": valueFieldName(position, len(queries))},
+			"properties": []any{map[string]any{"id": "unit", "value": render.dateUnit(queryAt, query.ValueFormat)}},
+		})
+	}
+	return overrides
+}
+
+// dateUnit is a value_format layout as Grafana's custom date unit: its text kept literal, and `%C` as the date.
+func (render *dashboardRender) dateUnit(at, layout string) string {
+	layoutParts, _ := yamldslspec.ParseLayout(layout)
+	var dateFormat strings.Builder
+	for _, layoutPart := range layoutParts {
+		verb := layoutPart.Verb
+		switch {
+		case verb == nil && strings.Contains(layoutPart.Text, "]"):
+			render.refuse(at, "Grafana's date format holds no `]` in its text")
+		case verb == nil:
+			dateFormat.WriteString("[" + layoutPart.Text + "]")
+		case verb.Letter != 'C':
+			render.refuse(at, "Grafana writes a `value_format` only with `%C`, as a date")
+		case verb.LeftAligned || verb.Width != nil:
+			render.refuse(at, "Grafana writes `%C` with no width")
+		default:
+			dateFormat.WriteString("YYYY-MM-DD")
+		}
+	}
+	return "time:" + dateFormat.String()
 }
 
 // writtenFields are the fields a panel states that only some of Grafana's panels draw.
@@ -198,6 +283,9 @@ func (render *dashboardRender) panelQueries(at string, queries []dashboarddsl.Qu
 		expression, err := render.queries.promQL(query.Query, query.Source)
 		if err != nil {
 			render.refuse(queryAt, err.Error())
+		}
+		if query.ValueFormat != "" {
+			expression = "(" + expression + ") * " + millisecondsPerSecond
 		}
 		querySpec := map[string]any{
 			"expr":    expression,

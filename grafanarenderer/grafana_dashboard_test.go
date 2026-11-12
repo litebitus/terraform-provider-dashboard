@@ -185,6 +185,15 @@ rows:
           - query: __name__:mock_up
 `
 
+const mockQueryOfAPanel = "        kind: time_series\n        height: 300\n        unit: count\n        queries:\n" +
+	"          - query: __name__:mock_up\n"
+
+// mockTableQuery is the mock panel as a table whose query's value is written by the value_format layout.
+func mockTableQuery(valueFormat string) string {
+	return "        kind: table\n        height: 300\n        unit: count\n        queries:\n" +
+		"          - query: __name__:mock_up\n            value_format: " + valueFormat + "\n"
+}
+
 // What Grafana cannot draw is refused, naming the dashboard, where in it, and why.
 func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 	for name, testCase := range map[string]struct {
@@ -218,6 +227,20 @@ func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 		"choices query with stages": {
 			"field_values(job)", `field_values(job, "__name__:mock_up | count()")`,
 			`dashboard "Mock", variable mock: Grafana reads a variable's values from a series selector`,
+		},
+		"value format with a verb other than a date": {
+			mockQueryOfAPanel, mockTableQuery(`"%d"`),
+			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: " +
+				"Grafana writes a `value_format` only with `%C`, as a date",
+		},
+		"value format with a padded date": {
+			mockQueryOfAPanel, mockTableQuery(`"%12C"`),
+			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: Grafana writes `%C` with no width",
+		},
+		"value format whose text holds a closing bracket": {
+			mockQueryOfAPanel, mockTableQuery(`"[%C]"`),
+			"dashboard \"Mock\", row 1 \"Mock row\", panel 1 \"Mock panel\", query 1: " +
+				"Grafana's date format holds no `]` in its text",
 		},
 	} {
 		if !strings.Contains(mockSpec, testCase.old) {
