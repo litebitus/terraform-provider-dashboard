@@ -2,7 +2,7 @@
 
 Each version is the format a dashboard document names in its `schema_version`, and the schema file of that name. A version not yet released is headed `## <version> — unreleased`; the release workflow stamps it with the provider release that ships it and the date.
 
-## 1.5 — unreleased
+## 1.5 — provider v0.1.5, 2026-11-13
 
 - A document declares `inputs`, values a render is passed, each its `type`, an optional `description` and an optional `default`.
 

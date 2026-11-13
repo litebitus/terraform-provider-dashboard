@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.5 — 2026-11-13
+
 - Dashboard DSL
   - `schemas/dashboard-dsl-v1.5.schema.json`: a document declares `inputs`, values a render is passed, read as `${inputs.<name>}`.
 - Rendering
