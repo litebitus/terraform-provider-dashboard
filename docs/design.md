@@ -6,13 +6,14 @@ A Terraform provider that renders dashboard DSL documents at plan time. A docume
 
 | | Signature | Answers |
 |---|---|---|
-| function `provider::dashboard::render` | `(spec string, options map(string)...)`, at most one map of options, `target_schema` its one key | the dashboard JSON, a string |
-| data source `dashboard_render` | `spec`, `target_schema` optional | `json`, the dashboard JSON |
+| function `provider::dashboard::render` | `(spec string, options object...)`, at most one object of options, `target_schema` and `inputs` its keys | the dashboard JSON, a string |
+| data source `dashboard_render` | `spec`, `target_schema` optional, `inputs` optional | `json`, the dashboard JSON |
 
 - `spec` is the document's text, which states everything about the dashboard, its identity included, in its `id`.
+- `inputs` are the values the document's inputs are passed, by input name, each a string, number, bool, list or map.
 - Both render through one path and differ in one thing: the data source also reads the provider's `default_target_schemas`, which Terraform never shows a function.
-- A render is a function of the document and its target schema alone, the same on every run: an identity the UI assigns never enters it, so a plan shows no change until the document does.
-- A problem fails the plan on the input it lies with: the document's at its position, `dashboard:"<title>":<line>:<column>`, and a target schema that cannot be chosen on `target_schema`, or the options for the function.
+- A render is a function of the document, its inputs and its target schema alone, the same on every run: an identity the UI assigns never enters it, so a plan shows no change until the document or an input does.
+- A problem fails the plan on the input it lies with: the document's at its position, `dashboard:"<title>":<line>:<column>`, a value passed for an input the document does not declare, or of another kind, on `inputs`, and a target schema that cannot be chosen on `target_schema`, or the options for the function.
 
 ### Choosing the target schema
 

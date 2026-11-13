@@ -2,6 +2,10 @@
 
 Each version is the format a dashboard document names in its `schema_version`, and the schema file of that name. A version not yet released is headed `## <version> — unreleased`; the release workflow stamps it with the provider release that ships it and the date.
 
+## 1.5 — unreleased
+
+- A document declares `inputs`, values a render is passed, each its `type`, an optional `description` and an optional `default`.
+
 ## 1.4 — provider v0.1.4, 2026-11-12
 
 - A `bar` panel takes a `value_order`, its bars in `ascending` or `descending` order of their values.

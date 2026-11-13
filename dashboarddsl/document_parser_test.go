@@ -81,7 +81,7 @@ func TestAMetricsSourceReadsItsReportingFilter(t *testing.T) {
 }
 
 func TestADocumentStatesItsMajorOrAMinor(t *testing.T) {
-	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`, `"1.4"`} {
+	for _, stated := range []string{`"1"`, `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`, `"1.4"`, `"1.5"`} {
 		if _, err := ParseDashboard(changed(t, `schema_version: "1"`, "schema_version: "+stated)); err != nil {
 			t.Errorf("schema_version %s: %v", stated, err)
 		}
@@ -203,12 +203,12 @@ func TestAProblemIsReportedAtItsPosition(t *testing.T) {
 		"empty document": {"", "the document is empty", "dashboard:{title}:1:1"},
 		"unknown version": {
 			changed(t, `schema_version: "1"`, `schema_version: "2"`),
-			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\" \"1.3\" \"1.4\"]",
+			"`schema_version` \"2\" is not a version this provider reads; it reads [\"1\" \"1.0\" \"1.1\" \"1.2\" \"1.3\" \"1.4\" \"1.5\"]",
 			mockSource + ":1:17",
 		},
 		"unquoted version": {
 			changed(t, `schema_version: "1"`, `schema_version: 1`),
-			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"`, `\"1.2\"`, `\"1.3\"` or `\"1.4\"`",
+			"`schema_version` is required, quoted, one of `\"1\"`, `\"1.0\"`, `\"1.1\"`, `\"1.2\"`, `\"1.3\"`, `\"1.4\"` or `\"1.5\"`",
 			mockSource + ":1:17",
 		},
 		"two target schemas of one kind": {

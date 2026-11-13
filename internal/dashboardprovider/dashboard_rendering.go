@@ -1,6 +1,7 @@
 package dashboardprovider
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/litebitus/terraform-provider-dashboard/dashboarddsl"
@@ -12,6 +13,7 @@ import (
 type renderRequest struct {
 	spec         string
 	targetSchema string
+	inputValues  dashboarddsl.InputValues
 	defaults     map[string]string
 }
 
@@ -27,6 +29,7 @@ func (problem renderProblem) Error() string { return problem.err.Error() }
 const (
 	specInput         = "spec"
 	targetSchemaInput = "target_schema"
+	inputsInput       = "inputs"
 )
 
 // dashboardRenderer renders a document for the target schemas it carries.
@@ -42,8 +45,12 @@ var renderers = []dashboardRenderer{
 
 // renderDocument renders a document for the one target schema the request leaves, resolved among those the provider carries.
 func renderDocument(request renderRequest) (string, error) {
-	dashboard, err := dashboarddsl.ParseDashboard(request.spec)
+	dashboard, err := dashboarddsl.ParseDashboardWithInputs(request.spec, request.inputValues)
 	if err != nil {
+		var inputsProblem dashboarddsl.InputsProblem
+		if errors.As(err, &inputsProblem) {
+			return "", renderProblem{inputsInput, err}
+		}
 		return "", renderProblem{specInput, err}
 	}
 	selected, err := targetschema.Select(targetschema.Request{

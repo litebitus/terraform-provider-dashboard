@@ -34,6 +34,7 @@ resource "aws_s3_object" "mock_service_dashboard" {
 
 ### Optional
 
+- `inputs` (Dynamic) The values the document's `inputs` are passed, by input name: each a string, number, bool, list or map, as its input's `type` declares.
 - `target_schema` (String) The target schema to render for: a whole identifier, such as `grafana-v2-13`, or the leading words of one, such as `grafana`.
 
 ### Read-Only

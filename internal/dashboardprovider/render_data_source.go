@@ -23,9 +23,10 @@ type renderDataSource struct {
 func newRenderDataSource() datasource.DataSource { return &renderDataSource{} }
 
 type renderDataSourceModel struct {
-	Spec         types.String `tfsdk:"spec"`
-	TargetSchema types.String `tfsdk:"target_schema"`
-	JSON         types.String `tfsdk:"json"`
+	Spec         types.String  `tfsdk:"spec"`
+	TargetSchema types.String  `tfsdk:"target_schema"`
+	Inputs       types.Dynamic `tfsdk:"inputs"`
+	JSON         types.String  `tfsdk:"json"`
 }
 
 func (*renderDataSource) Metadata(_ context.Context, request datasource.MetadataRequest, response *datasource.MetadataResponse) {
@@ -44,6 +45,11 @@ func (*renderDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 				MarkdownDescription: "The target schema to render for: a whole identifier, such as `grafana-v2-13`, " +
 					"or the leading words of one, such as `grafana`.",
 			},
+			inputsInput: schema.DynamicAttribute{
+				Optional: true,
+				MarkdownDescription: "The values the document's `inputs` are passed, by input name: " +
+					"each a string, number, bool, list or map, as its input's `type` declares.",
+			},
 			"json": schema.StringAttribute{Computed: true, MarkdownDescription: "The rendered dashboard JSON."},
 		},
 	}
@@ -60,9 +66,15 @@ func (source *renderDataSource) Read(ctx context.Context, request datasource.Rea
 	if response.Diagnostics.Append(request.Config.Get(ctx, &model)...); response.Diagnostics.HasError() {
 		return
 	}
+	passedValues, err := inputValues(model.Inputs)
+	if err != nil {
+		response.Diagnostics.AddAttributeError(path.Root(inputsInput), "The dashboard does not render", err.Error())
+		return
+	}
 	rendered, err := renderDocument(renderRequest{
 		spec:         model.Spec.ValueString(),
 		targetSchema: model.TargetSchema.ValueString(),
+		inputValues:  passedValues,
 		defaults:     source.defaults,
 	})
 	if err != nil {

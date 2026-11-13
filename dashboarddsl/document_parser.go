@@ -20,15 +20,27 @@ const (
 
 // ParseDashboard reads a dashboard document from its text and holds it to the DSL: its shape to the schema its schema_version names, then the rules a schema cannot state, answering every problem found.
 func ParseDashboard(specText string) (Dashboard, error) {
-	documentRoot, readProblem := yamldslspec.ParseYAML(dashboardSourceName, specText, nil)
+	return ParseDashboardWithInputs(specText, nil)
+}
+
+// ParseDashboardWithInputs reads a dashboard document as ParseDashboard does, its inputs first substituted by the values a render is passed, else by their defaults. A problem with the values passed is an InputsProblem.
+func ParseDashboardWithInputs(specText string, passedValues InputValues) (Dashboard, error) {
+	writtenRoot, readProblem := yamldslspec.ParseYAML(dashboardSourceName, specText, nil)
 	if readProblem != nil {
 		readSource := diagnostic_renderer.DiagnosticSource{Name: untitledSourceName, Text: specText}
 		return Dashboard{}, problemReport(readSource, []yamldslspec.Diagnostic{*readProblem})
 	}
-	source := diagnostic_renderer.DiagnosticSource{Name: sourceName(documentRoot), Text: specText}
-	if documentRoot.Kind == yamldslspec.NodeNull {
-		emptyProblem := yamldslspec.DiagnosticAt(documentRoot.Position, "the document is empty")
+	source := diagnostic_renderer.DiagnosticSource{Name: sourceName(writtenRoot), Text: specText}
+	if writtenRoot.Kind == yamldslspec.NodeNull {
+		emptyProblem := yamldslspec.DiagnosticAt(writtenRoot.Position, "the document is empty")
 		return Dashboard{}, problemReport(source, []yamldslspec.Diagnostic{emptyProblem})
+	}
+	documentRoot, inputsSubstituted, inputProblems, err := substituteInputs(writtenRoot, passedValues)
+	if err != nil {
+		return Dashboard{}, err
+	}
+	if len(inputProblems) > 0 {
+		return Dashboard{}, problemReport(source, inputProblems)
 	}
 	shapeProblems, err := validateShape(documentRoot)
 	if err != nil {
@@ -37,8 +49,14 @@ func ParseDashboard(specText string) (Dashboard, error) {
 	if len(shapeProblems) > 0 {
 		return Dashboard{}, problemReport(source, shapeProblems)
 	}
+	documentText := []byte(specText)
+	if inputsSubstituted {
+		if documentText, err = json.Marshal(documentRoot.ToJSON()); err != nil {
+			return Dashboard{}, problemReport(source, []yamldslspec.Diagnostic{yamldslspec.UnplacedDiagnostic(err.Error())})
+		}
+	}
 	var dashboard Dashboard
-	if err := yaml.Unmarshal([]byte(specText), &dashboard); err != nil {
+	if err := yaml.Unmarshal(documentText, &dashboard); err != nil {
 		return Dashboard{}, problemReport(source, []yamldslspec.Diagnostic{yamldslspec.UnplacedDiagnostic(err.Error())})
 	}
 	if ruleProblems := validateDashboard(dashboard, documentRoot); len(ruleProblems) > 0 {

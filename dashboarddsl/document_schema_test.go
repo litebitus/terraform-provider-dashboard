@@ -22,7 +22,7 @@ func TestASchemaProblemIsReportedAsACompilerReportsOne(t *testing.T) {
 		"22 |         unit: per_second\n" +
 		"23 |         queries:\n" +
 		"   |\n" +
-		"   = rule: minimum, at dashboard-dsl-v1.4.schema.json#/$defs/panel/properties/width/minimum\n" +
+		"   = rule: minimum, at dashboard-dsl-v1.5.schema.json#/$defs/panel/properties/width/minimum\n" +
 		"\n" +
 		"1 error"
 	if err == nil || err.Error() != want {

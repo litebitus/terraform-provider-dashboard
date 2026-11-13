@@ -7,7 +7,7 @@ A dashboard is written in the dashboard DSL: what it shows, in words no UI owns.
 | File | Defines |
 |---|---|
 | `schemas/dashboard-dsl-v<major>.<minor>.schema.json` | the document's shape: every field, its type and values, and what each panel kind requires, in JSON Schema draft 2020-12 |
-| `yaml-dsl.yml` | the DSL as the [YAML DSL standard](https://github.com/litebitus/yaml-dsl-spec/blob/main/docs/spec.md) defines one: which files are dashboards, where their schema is, and variables as the `variable` scope, declared under `variables` and referenced as `${name}` |
+| `yaml-dsl.yml` | the DSL as the [YAML DSL standard](https://github.com/litebitus/yaml-dsl-spec/blob/main/docs/spec.md) defines one: which files are dashboards, where their schema is, inputs as the `input` scope, declared under `inputs` and referenced as `${inputs.<name>}`, and variables as the `variable` scope, declared under `variables` and referenced as `${name}` |
 
 A workspace whose dashboards stand elsewhere adds the `dashboard` block to its own `yaml-dsl.yml`, naming the published schema in `schema_search_paths`.
 
@@ -59,6 +59,7 @@ A document is a dashboard: a dashboard holds rows, a row holds panels, and a pan
 | `filter` | a DQL filter every query also applies, with no stages; optional |
 | `links` | links shown with the dashboard, each a `title` and a `url`; optional |
 | `annotations` | marks on the time axis, each a `title`, a `query` whose items mark it and an optional `source`; optional |
+| `inputs` | input name → the input, a value a render is passed; optional |
 | `variables` | variable name → the variable's attributes; the dashboard shows its variables in name order |
 | `rows` | the rows, top to bottom, at least one |
 
@@ -71,9 +72,29 @@ A document is a dashboard: a dashboard holds rows, a row holds panels, and a pan
 | `time_field` | for `logs`, the field the time range filters on |
 | `reporting_filter` | for `metrics`, a DQL filter selecting the series the source emits while it reports; optional |
 
+### Input
+
+A document is a template: an input is a value a render is passed, read as `${inputs.<name>}`. The render substitutes every input before it reads the document, so a value an input brings is held to the schema and the rules like a written one, and a problem with it is reported where its placeholder stands. A name is letters, digits and underscores, beginning with a letter or an underscore.
+
+| Field | Holds |
+|---|---|
+| `type` | the kind of value the input takes: `string`, `number`, `boolean`, `list` or `map` |
+| `description` | what the input is for; optional |
+| `default` | the value when a render is passed none; optional, the input required without one |
+
+| A placeholder | Reads |
+|---|---|
+| the whole value, `default: ${inputs.env}` | the input as it is, of any kind |
+| inside text, `filter: env:${inputs.env}` | a scalar's text; a list or a map there is a problem |
+| with a key path, `${inputs.owner.team}` | a key of a `map` input, at any depth |
+| escaped, `$${inputs.env}` | nothing: it is written as `${inputs.env}` |
+
+- A placeholder stands in any value, never in a key, and never inside `inputs` itself.
+- A value passed for an input the document does not declare, or of another kind than its `type`, fails the render on its inputs.
+
 ### Variable
 
-A query names a variable as `${<name>}`, the one form a reference takes; the UI substitutes the chosen value. A name is letters, digits and underscores, beginning with a letter or an underscore.
+A query names a variable as `${<name>}`; the UI substitutes the chosen value. A name is letters, digits and underscores, beginning with a letter or an underscore.
 
 | Field | Holds |
 |---|---|
@@ -199,6 +220,7 @@ rows:
 
 Beyond its shape, a document holds to these:
 
+- Every `${inputs.<name>}` names a declared input, and every input without a `default` is passed a value.
 - Every `${name}`, in a query, the filter, a `legend_format` or a link's `url`, and every `repeat_for`, names a declared variable.
 - Thresholds rise from the lowest, and `min` is below `max`.
 - The stated widths of a row's panels add up to at most the row, leaving room for any panel without one.

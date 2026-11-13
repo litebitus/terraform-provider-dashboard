@@ -22,8 +22,8 @@ func (renderFunction) Metadata(_ context.Context, _ function.MetadataRequest, re
 	response.Name = "render"
 }
 
-// renderOptions are the keys the function's options map takes.
-var renderOptions = []string{targetSchemaInput}
+// renderOptions are the keys the function's options take.
+var renderOptions = []string{inputsInput, targetSchemaInput}
 
 func (renderFunction) Definition(_ context.Context, _ function.DefinitionRequest, response *function.DefinitionResponse) {
 	response.Definition = function.Definition{
@@ -36,11 +36,11 @@ func (renderFunction) Definition(_ context.Context, _ function.DefinitionRequest
 		Parameters: []function.Parameter{
 			function.StringParameter{Name: specInput, MarkdownDescription: "The dashboard document's text."},
 		},
-		VariadicParameter: function.MapParameter{
-			Name:        "options",
-			ElementType: types.StringType,
-			MarkdownDescription: "At most one map of options: `target_schema`, the target schema to render for, " +
-				"a whole identifier such as `grafana-v2-13` or the leading words of one such as `grafana`.",
+		VariadicParameter: function.DynamicParameter{
+			Name: "options",
+			MarkdownDescription: "At most one object of options: `target_schema`, the target schema to render for, " +
+				"a whole identifier such as `grafana-v2-13` or the leading words of one such as `grafana`; " +
+				"and `inputs`, the values the document's `inputs` are passed, by input name.",
 		},
 		Return: function.StringReturn{},
 	}
@@ -53,32 +53,55 @@ const (
 
 func (renderFunction) Run(ctx context.Context, request function.RunRequest, response *function.RunResponse) {
 	var spec string
-	var options []map[string]string
+	var options []types.Dynamic
 	if response.Error = request.Arguments.Get(ctx, &spec, &options); response.Error != nil {
 		return
 	}
 	if len(options) > 1 {
 		response.Error = function.NewArgumentFuncError(optionsArgument+1,
-			fmt.Sprintf("the options are one map, not %d", len(options)))
+			fmt.Sprintf("the options are one object, not %d", len(options)))
 		return
 	}
 	render := renderRequest{spec: spec}
 	if len(options) == 1 {
-		for _, key := range slices.Sorted(maps.Keys(options[0])) {
-			if !slices.Contains(renderOptions, key) {
+		statedOptions, err := plainValueOf(options[0])
+		optionValues, isMapping := statedOptions.(map[string]any)
+		if err != nil || !isMapping {
+			response.Error = function.NewArgumentFuncError(optionsArgument,
+				"the options are an object of "+strings.Join(renderOptions, ", "))
+			return
+		}
+		for _, optionKey := range slices.Sorted(maps.Keys(optionValues)) {
+			if !slices.Contains(renderOptions, optionKey) {
 				response.Error = function.NewArgumentFuncError(optionsArgument,
-					fmt.Sprintf("%q is not an option; the options are %s", key, strings.Join(renderOptions, ", ")))
+					fmt.Sprintf("%q is not an option; the options are %s", optionKey, strings.Join(renderOptions, ", ")))
 				return
 			}
 		}
-		render.targetSchema = options[0][targetSchemaInput]
+		if statedTarget, isStated := optionValues[targetSchemaInput]; isStated {
+			targetText, isText := statedTarget.(string)
+			if !isText {
+				response.Error = function.NewArgumentFuncError(optionsArgument, "`target_schema` is a string")
+				return
+			}
+			render.targetSchema = targetText
+		}
+		if statedInputs, isStated := optionValues[inputsInput]; isStated && statedInputs != nil {
+			passedValues, isInputMap := statedInputs.(map[string]any)
+			if !isInputMap {
+				response.Error = function.NewArgumentFuncError(optionsArgument,
+					"`inputs` is a map of input name to value")
+				return
+			}
+			render.inputValues = passedValues
+		}
 	}
 	rendered, err := renderDocument(render)
 	if err != nil {
 		var problem renderProblem
 		if errors.As(err, &problem) {
 			argument := int64(specArgument)
-			if problem.input == targetSchemaInput {
+			if problem.input == targetSchemaInput || problem.input == inputsInput {
 				argument = optionsArgument
 			}
 			response.Error = function.NewArgumentFuncError(argument, problem.Error())

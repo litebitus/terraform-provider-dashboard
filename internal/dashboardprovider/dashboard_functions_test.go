@@ -44,14 +44,25 @@ func withTargetSchemas(declared string) string {
 // run calls the function with the spec and the option maps given, as Terraform passes them.
 func run(t *testing.T, spec string, options ...map[string]string) (string, *function.FuncError) {
 	t.Helper()
-	elementTypes := make([]attr.Type, len(options))
-	elements := make([]attr.Value, len(options))
+	optionValues := make([]attr.Value, len(options))
 	for index, option := range options {
 		values := map[string]attr.Value{}
 		for key, value := range option {
 			values[key] = types.StringValue(value)
 		}
-		elementTypes[index], elements[index] = types.MapType{ElemType: types.StringType}, types.MapValueMust(types.StringType, values)
+		optionValues[index] = types.MapValueMust(types.StringType, values)
+	}
+	return runWithOptionValues(t, spec, optionValues...)
+}
+
+// runWithOptionValues calls the function with the spec and the options given, each
+// passed as the dynamic value Terraform hands the function.
+func runWithOptionValues(t *testing.T, spec string, optionValues ...attr.Value) (string, *function.FuncError) {
+	t.Helper()
+	elementTypes := make([]attr.Type, len(optionValues))
+	elements := make([]attr.Value, len(optionValues))
+	for index, optionValue := range optionValues {
+		elementTypes[index], elements[index] = types.DynamicType, types.DynamicValue(optionValue)
 	}
 	arguments := []attr.Value{types.StringValue(spec), types.TupleValueMust(elementTypes, elements)}
 	response := &function.RunResponse{Result: function.NewResultData(types.StringUnknown())}
@@ -109,16 +120,71 @@ func TestAProblemBlamesTheArgumentItLiesWith(t *testing.T) {
 		},
 		"an unknown option": {
 			mockSpec, []map[string]string{{"target_schemas": "grafana-v2-13"}}, optionsArgument,
-			`"target_schemas" is not an option; the options are target_schema`,
+			`"target_schemas" is not an option; the options are inputs, target_schema`,
 		},
 		"two option maps": {
-			mockSpec, []map[string]string{{}, {}}, optionsArgument + 1, "the options are one map, not 2",
+			mockSpec, []map[string]string{{}, {}}, optionsArgument + 1, "the options are one object, not 2",
 		},
 	} {
 		_, err := run(t, testCase.spec, testCase.options...)
 		if err == nil || !strings.Contains(err.Text, testCase.says) || err.FunctionArgument == nil || *err.FunctionArgument != testCase.argument {
 			t.Errorf("%s: err = %+v, want %q on argument %d", name, err, testCase.says, testCase.argument)
 		}
+	}
+}
+
+// mockInputsSpec reads its title and a panel's height from inputs.
+var mockInputsSpec = strings.Replace(strings.Replace(mockSpec,
+	"title: Mock\n", "title: Mock ${inputs.service}\ninputs:\n  service:\n    type: string\n"+
+		"  height:\n    type: number\n    default: 300\n", 1),
+	"height: 300", "height: ${inputs.height}", 1)
+
+// The options' inputs are what the document's inputs read.
+func TestTheOptionsPassTheInputs(t *testing.T) {
+	options := types.ObjectValueMust(
+		map[string]attr.Type{
+			"target_schema": types.StringType,
+			"inputs":        types.ObjectType{AttrTypes: map[string]attr.Type{"service": types.StringType}},
+		},
+		map[string]attr.Value{
+			"target_schema": types.StringValue("grafana-v2-13"),
+			"inputs": types.ObjectValueMust(
+				map[string]attr.Type{"service": types.StringType},
+				map[string]attr.Value{"service": types.StringValue("mock-service")}),
+		},
+	)
+	got, err := runWithOptionValues(t, mockInputsSpec, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var dashboard struct {
+		Spec struct {
+			Title string `json:"title"`
+		} `json:"spec"`
+	}
+	if err := json.Unmarshal([]byte(got), &dashboard); err != nil || dashboard.Spec.Title != "Mock mock-service" {
+		t.Errorf("dashboard = %+v (%v)", dashboard, err)
+	}
+}
+
+// A value passed for an input the document does not declare is blamed on the options.
+func TestAnInputsProblemBlamesTheOptions(t *testing.T) {
+	options := types.ObjectValueMust(
+		map[string]attr.Type{
+			"target_schema": types.StringType,
+			"inputs":        types.ObjectType{AttrTypes: map[string]attr.Type{"mock": types.StringType}},
+		},
+		map[string]attr.Value{
+			"target_schema": types.StringValue("grafana-v2-13"),
+			"inputs": types.ObjectValueMust(
+				map[string]attr.Type{"mock": types.StringType},
+				map[string]attr.Value{"mock": types.StringValue("mock-value")}),
+		},
+	)
+	_, err := runWithOptionValues(t, mockInputsSpec, options)
+	if err == nil || !strings.Contains(err.Text, "the document declares no input `mock`") ||
+		err.FunctionArgument == nil || *err.FunctionArgument != optionsArgument {
+		t.Errorf("err = %+v", err)
 	}
 }
 
@@ -170,6 +236,30 @@ output "api_version" {
 `,
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownOutputValue("api_version", knownvalue.StringExact("dashboard.grafana.app/v2")),
+			},
+		}},
+	})
+}
+
+// The data source passes its inputs, each of the kind its input declares.
+func TestTheDataSourcePassesItsInputs(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: protocolProviders,
+		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_8_0)},
+		Steps: []resource.TestStep{{
+			Config: mockDefaultsProvider + `
+data "dashboard_render" "mock" {
+  spec          = ` + specHeredoc(strings.ReplaceAll(mockInputsSpec, "${", "$${")) + `
+  target_schema = "grafana"
+  inputs        = { service = "mock-service", height = 200 }
+}
+
+output "title" {
+  value = jsondecode(data.dashboard_render.mock.json).spec.title
+}
+`,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownOutputValue("title", knownvalue.StringExact("Mock mock-service")),
 			},
 		}},
 	})
