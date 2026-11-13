@@ -158,6 +158,11 @@ func TestAPanelColorsItsValuesFromOneSource(t *testing.T) {
 	}
 }
 
+// exampleInputs are the values an example dashboard declaring required inputs is passed.
+var exampleInputs = map[string]InputValues{
+	"mock-game.yml": {"game": "mock-slots"},
+}
+
 func TestEveryExampleDashboardParses(t *testing.T) {
 	examples, err := filepath.Glob("../examples/dashboards/*.yml")
 	if err != nil || len(examples) == 0 {
@@ -171,7 +176,7 @@ func TestEveryExampleDashboardParses(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := ParseDashboard(string(spec)); err != nil {
+		if _, err := ParseDashboardWithInputs(string(spec), exampleInputs[filepath.Base(example)]); err != nil {
 			t.Errorf("%s: %v", example, err)
 		}
 	}

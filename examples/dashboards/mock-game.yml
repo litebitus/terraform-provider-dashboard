@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.5.schema.json
+schema_version: "1"
+target_schemas: [grafana-v2-13]
+id: mock-game-${inputs.game}
+title: Mock Game ${inputs.game}
+description: One document for every game; each stack passes its game, and $${inputs.game} is written as text.
+tags: ${inputs.tags}
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+inputs:
+  game:
+    type: string
+    description: The game the dashboard shows.
+  env:
+    type: string
+    description: The env the dashboard opens on.
+    default: dev
+  tags:
+    type: list
+    description: The dashboard's tags.
+    default: [game]
+  alert_levels:
+    type: map
+    description: The error rates each level starts at, by alert severity.
+    default:
+      errors:
+        warning: 1
+        critical: 5
+filter: game:${inputs.game}
+variables:
+  env:
+    choices: field_values(env)
+    default: ${inputs.env}
+rows:
+  - title: Spins of ${inputs.game}
+    panels:
+      - title: Spins
+        kind: time_series
+        height: 300
+        unit: per_second
+        queries:
+          - query: __name__:mock_spins_total and env:${env} | rate(5m) | sum()
+            legend_format: spins
+      - title: Errors
+        description: Colored at the game's alert levels, read from a map input by key path.
+        kind: stat
+        height: 300
+        unit: per_second
+        calculation: last
+        thresholds:
+          - color: green
+          - value: ${inputs.alert_levels.errors.warning}
+            color: yellow
+          - value: ${inputs.alert_levels.errors.critical}
+            color: red
+        queries:
+          - query: __name__:mock_errors_total and env:${env} | rate(5m) | sum()

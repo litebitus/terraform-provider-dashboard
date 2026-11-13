@@ -48,7 +48,7 @@ A document is a dashboard: a dashboard holds rows, a row holds panels, and a pan
 |---|---|
 | `schema_version` | the version of the DSL the document is written in, required |
 | `target_schemas` | the target schemas the dashboard renders for, at most one per kind; optional |
-| `id` | the dashboard's identity in the UI it renders for, unique there; optional, the UI assigning one where it can; a shared template sets it from its parameters |
+| `id` | the dashboard's identity in the UI it renders for, unique there; optional, the UI assigning one where it can; a shared document sets it from its inputs |
 | `title` | the dashboard's title, required |
 | `description` | what the dashboard is for; optional |
 | `tags` | the dashboard's tags; optional |
