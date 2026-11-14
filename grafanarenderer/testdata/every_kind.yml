@@ -20,7 +20,7 @@ variables:
     choices: field_values(env)
     default: mock
   job:
-    choices: field_values(job, "__name__:mock_requests_total")
+    choices: field_values(job, "__name__:mock_requests_total and env:${env}")
     multiple: true
     include_all: true
   region:

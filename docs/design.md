@@ -80,7 +80,7 @@ A render is a V2 Resource dashboard of the target schema's `api_version`. Its `m
 
 ### Queries
 
-- Every query compiles to PromQL. A panel's, an annotation's and a variable's choices query each also apply the dashboard's filter.
+- Every query compiles to PromQL. A panel's and an annotation's query each also apply the dashboard's filter; a variable's choices query is its own scope.
 - A query names no data source and reads the UI's default.
 - A variable's choices query is a filter with no stages: Grafana reads label values from a series selector.
 

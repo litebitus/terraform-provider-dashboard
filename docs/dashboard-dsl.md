@@ -56,7 +56,7 @@ A document is a dashboard: a dashboard holds rows, a row holds panels, and a pan
 | `refresh_interval` | how often it queries again, a duration, required |
 | `timezone` | the zone times show in: `utc` or `browser`, required |
 | `source` | where the dashboard's queries read from, required |
-| `filter` | a DQL filter every query also applies, with no stages; optional |
+| `filter` | a DQL filter every panel's and annotation's query also applies, with no stages; optional |
 | `links` | links shown with the dashboard, each a `title` and a `url`; optional |
 | `annotations` | marks on the time axis, each a `title`, a `query` whose items mark it and an optional `source`; optional |
 | `inputs` | input name → the input, a value a render is passed; optional |
@@ -112,6 +112,8 @@ A query names a variable as `${<name>}`; the UI substitutes the chosen value. A 
 | `range(field)` | a range between a numeric field's least and greatest values |
 
 A call is written as in DQL's stages: the function's name, then its arguments in parentheses, separated by commas. An argument is a field name, a number, or a quoted string.
+
+A variable's choices are scoped by its call alone; the dashboard's `filter` does not apply to them. A variable that depends on another variable names that variable in its query, `field_values(region, "env:${env}")`, which makes its choices follow that variable's value.
 
 ### Row
 

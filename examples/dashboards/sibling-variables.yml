@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.5.schema.json
+schema_version: "1"
+target_schemas: [grafana-v2-13]
+id: sibling-variables
+title: Sibling Variables
+description: Two variables following the same one and not each other, each panel narrowed by the variable it reads.
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+filter: env:${env}
+variables:
+  env:
+    choices: field_values(env)
+  cluster:
+    choices: field_values(cluster, "env:${env}")
+  queue:
+    choices: field_values(queue, "__name__:mock_queue_depth and env:${env}")
+rows:
+  - title: Load
+    panels:
+      - title: Nodes ready
+        kind: stat
+        width: 50
+        height: 200
+        unit: count
+        calculation: last
+        queries:
+          - query: __name__:mock_nodes_ready and cluster:${cluster} | sum()
+      - title: Queue depth
+        kind: stat
+        width: 50
+        height: 200
+        unit: count
+        calculation: last
+        queries:
+          - query: __name__:mock_queue_depth and queue:${queue} | max()

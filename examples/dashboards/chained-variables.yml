@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.5.schema.json
+schema_version: "1"
+target_schemas: [grafana-v2-13]
+id: chained-variables
+title: Chained Variables
+description: A chain of variables, each following the one before it, and the dashboard's filter applying all three to every panel.
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+filter: env:${env} and region:${region} and job:${job}
+variables:
+  env:
+    choices: field_values(env)
+  region:
+    choices: field_values(region, "env:${env}")
+  job:
+    choices: field_values(job, "__name__:mock_requests_total and env:${env} and region:${region}")
+rows:
+  - title: Traffic
+    panels:
+      - title: Requests
+        kind: time_series
+        height: 300
+        unit: per_second
+        queries:
+          - query: __name__:mock_requests_total | rate(5m) | sum()
+            legend_format: requests

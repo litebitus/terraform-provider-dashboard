@@ -269,6 +269,25 @@ func TestWhatGrafanaCannotDrawIsRefused(t *testing.T) {
 	}
 }
 
+// A variable's choices are scoped by its own query alone, so a variable the dashboard's filter names chains on the
+// variables its query names and never on itself; the panels' queries still apply the filter whole.
+func TestAVariablesChoicesTakeOnlyItsOwnQuery(t *testing.T) {
+	spec := strings.Replace(mockSpec, "variables:\n  mock:\n    choices: field_values(job)\n",
+		"filter: mock_env:${mock_env} and mock_region:${mock_region}\n"+
+			"variables:\n  mock_env:\n    choices: field_values(mock_env)\n"+
+			"  mock_region:\n    choices: field_values(mock_region, \"mock_env:${mock_env}\")\n", 1)
+	output, err := rendered(t, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(output)
+	wantChoices := `label_values({mock_env=~\"${mock_env}\"}, mock_region)`
+	wantPanel := `mock_up{mock_env=~\"${mock_env}\",mock_region=~\"${mock_region}\"}`
+	if !strings.Contains(text, wantChoices) || !strings.Contains(text, wantPanel) {
+		t.Errorf("render lacks the choices query %s or the panel query %s:\n%s", wantChoices, wantPanel, text)
+	}
+}
+
 // A value_format's date verbs render as their Moment.js tokens, unpadded and zero-padded alike.
 func TestADateFormatRendersItsMomentTokens(t *testing.T) {
 	render := &dashboardRender{}

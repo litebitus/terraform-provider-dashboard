@@ -46,9 +46,10 @@ func (compiler queryCompiler) promQL(query string, querySource *dashboarddsl.Sou
 	return promqlbackend.CompileQuery(parsed, config)
 }
 
-// seriesSelector is a variable's choices query as the series selector Grafana reads label values from, under the dashboard's filter.
+// seriesSelector is a variable's choices query as the series selector Grafana reads label values from. The query
+// alone scopes the choices, naming every variable they depend on; the dashboard's filter is the panels'.
 func (compiler queryCompiler) seriesSelector(query string) (string, error) {
-	parsed, err := compiler.filtered(query)
+	parsed, err := dqlsyntax.ParseQuery(query, dashboarddsl.QueryGrammarVersion())
 	if err != nil {
 		return "", err
 	}

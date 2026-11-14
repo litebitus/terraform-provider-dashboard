@@ -11,6 +11,8 @@ source:
 variables:
   env:
     choices: field_values(env)
+    # Optional: without a default, Grafana opens on the first choice in sort
+    # order, which is usually the one wanted.
     default: dev
   job:
     multiple: true

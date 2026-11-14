@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../schemas/dashboard-dsl-v1.5.schema.json
+schema_version: "1"
+target_schemas: [grafana-v2-13]
+id: multi-value-parent
+title: Multi-Value Parent
+description: A variable following one that holds several values at once, its choices those of every value chosen.
+time_range: 6h
+refresh_interval: 1m
+timezone: utc
+source:
+  kind: metrics
+variables:
+  job:
+    multiple: true
+    include_all: true
+    choices: field_values(job, "__name__:up")
+  instance:
+    multiple: true
+    choices: field_values(instance, "__name__:up and job:${job}")
+rows:
+  - title: Health
+    panels:
+      - title: Up by instance
+        kind: status_history
+        height: 300
+        unit: count
+        queries:
+          - query: __name__:up and job:${job} and instance:${instance} | min() by instance
+            legend_format: "{{instance}}"
