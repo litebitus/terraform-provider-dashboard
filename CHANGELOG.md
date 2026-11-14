@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.6 — 2026-11-14
+
 - Rendering
   - A variable's choices are scoped by their own query alone; the dashboard's `filter` applies to panels and annotations.
 
